@@ -46,7 +46,7 @@ class Tensor {
 
     // Evalutates this tensor node (if it has not yet been evaluated), then returns the pointer to
     // the resulting data buffer.
-    virtual scalar_t* eval() {
+    virtual const scalar_t* eval() {
         if (this->data) {
             return this->data->data();
         } else {
@@ -66,6 +66,9 @@ class Tensor {
         return result;
     }
 
+    // The Tensor's dimensions.
+    std::vector<size_t> dims;
+
    protected:
     // Move constructor.
     Tensor(Tensor&& other) noexcept = default;
@@ -73,9 +76,6 @@ class Tensor {
     // Move assignment operator.
     Tensor& operator=(Tensor&& other) noexcept = delete;
 
-   private:
-    // The Tensor's dimensions.
-    std::vector<size_t> dims;
     // The Tensor's data buffer.
     // May be empty if this Tensor has no cached data.
     std::optional<std::vector<scalar_t>> data;
