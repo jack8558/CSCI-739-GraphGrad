@@ -13,27 +13,24 @@ class Tensor {
     Tensor& operator=(const Tensor&) = delete;
 
     // Destructor.
-    virtual ~Tensor() {
-        if (data != nullptr) {
-            // TODO: free data
-        }
-    }
+    virtual ~Tensor() {}
 
     // Other methods...
 
    protected:
     // Construct a Tensor without any data buffer.
-    explicit Tensor(std::vector<size_t> dims) : data(nullptr), dims(dims) {}
+    explicit Tensor(std::vector<size_t> dims) : dims(dims) {}
 
-    // Move constructor
-    Tensor(Tensor&& other) noexcept : data(other.data), dims(std::move(other.dims)) {
-        other.data = nullptr;  // Ensure that 'other' won't delete the data
-    }
+    // Move constructor.
+    Tensor(Tensor&& other) noexcept = default;
 
-    // Move assignment operator
+    // Move assignment operator.
     Tensor& operator=(Tensor&& other) noexcept = delete;
 
    private:
-    scalar_t* data;
+    // The Tensor's dimensions.
     std::vector<size_t> dims;
+    // The Tensor's data buffer.
+    // May be empty if this Tensor has no cached data.
+    std::vector<scalar_t> data;
 };
