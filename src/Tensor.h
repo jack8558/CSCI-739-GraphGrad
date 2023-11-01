@@ -1,7 +1,9 @@
 #pragma once
 
 #include <cstdlib>
+#include <optional>
 #include <random>
+#include <stdexcept>
 #include <string>
 #include <vector>
 
@@ -27,13 +29,13 @@ class Tensor {
     // Create a new tensor filled with random values in the range [0, 1).
     static std::shared_ptr<Tensor> rand(std::vector<size_t> dims) {
         auto result = std::make_shared<Tensor>(dims);
-        result->data.resize(product(dims));
+        result->data.emplace(product(dims));
 
         // Fill the data with random values.
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_real_distribution<> dis(0, 1);
-        for (scalar_t& value : result->data) {
+        for (scalar_t& value : *result->data) {
             value = dis(gen);
         }
 
@@ -42,12 +44,24 @@ class Tensor {
 
     // Other methods:
 
+    // Evalutates this tensor node (if it has not yet been evaluated), then returns the pointer to
+    // the resulting data buffer.
+    virtual scalar_t* eval() {
+        if (this->data) {
+            return this->data->data();
+        } else {
+            throw std::runtime_error("called eval() on a Tensor with no data");
+        }
+    }
+
     // Converts the tensor to a human-readable string.
-    std::string to_string() const {
+    virtual std::string to_string() const {
         std::string result = "<Tensor: dims=";
         result += vector_to_string(this->dims);
-        result += ", data=";
-        result += vector_to_string(this->data);
+        if (this->data) {
+            result += ", data=";
+            result += vector_to_string(*this->data);
+        }
         result += ">";
         return result;
     }
@@ -64,5 +78,5 @@ class Tensor {
     std::vector<size_t> dims;
     // The Tensor's data buffer.
     // May be empty if this Tensor has no cached data.
-    std::vector<scalar_t> data;
+    std::optional<std::vector<scalar_t>> data;
 };
