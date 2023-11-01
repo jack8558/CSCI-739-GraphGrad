@@ -10,5 +10,7 @@ namespace py = pybind11;
 #include "Tensor.h"
 
 PYBIND11_MODULE(graphgrad, m) {
-    py::class_<Tensor, std::shared_ptr<Tensor>>(m, "Tensor");
+    py::class_<Tensor, std::shared_ptr<Tensor>>(m, "Tensor")
+        .def_static("rand", &Tensor::rand)
+        .def("__repr__", &Tensor::to_string);
 }

@@ -1,6 +1,6 @@
 # Define the source files and output file.
 SOURCE_FILES := src/graphgrad.cc
-HEADER_FILES := src/Tensor.h src/LeafTensor.h
+HEADER_FILES := src/Tensor.h
 INPUT_FILES := $(SOURCE_FILES) $(HEADER_FILES)
 OUTPUT_FILE := graphgrad$(shell python3-config --extension-suffix)
 
