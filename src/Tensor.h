@@ -28,14 +28,15 @@ class Tensor {
 
     // Create a new tensor filled with random values in the range [0, 1).
     static std::shared_ptr<Tensor> rand(std::vector<size_t> dims) {
+        // Allocate a new tensor with the given dims.
         auto result = std::make_shared<Tensor>(dims);
-        result->data.emplace(product(dims));
+        auto& data = result->allocate_data();
 
         // Fill the data with random values.
         std::random_device rd;
         std::mt19937 gen(rd());
         std::uniform_real_distribution<> dis(0, 1);
-        for (scalar_t& value : *result->data) {
+        for (scalar_t& value : data) {
             value = dis(gen);
         }
 
@@ -70,6 +71,17 @@ class Tensor {
     std::vector<size_t> dims;
 
    protected:
+    // Allocate the data buffer for this tensor and return a reference to it.
+    // The buffer size is equal to the product of dims.
+    // Throws an exception if this tensor already has data allocated.
+    std::vector<scalar_t>& allocate_data() {
+        if (this->data) {
+            throw std::runtime_error("called allocate_data() on a Tensor with data already allocated");
+        }
+        this->data.emplace(product(this->dims));
+        return *this->data;
+    }
+
     // Move constructor.
     Tensor(Tensor&& other) noexcept = default;
 

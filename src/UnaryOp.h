@@ -14,11 +14,11 @@ class UnaryOp : public Tensor {
 
     const scalar_t* eval() override {
         if (!this->data) {
+            // Evaluate the child node and get its data.
             const scalar_t* child_data = this->child->eval();
 
-            // Allocate a data buffer.
-            this->data.emplace(product(dims));
-            auto& data = *this->data;
+            // Allocate the data buffer.
+            auto& data = this->allocate_data();
 
             // Get a function to compute each value.
             scalar_t (*scalar_func)(scalar_t);
