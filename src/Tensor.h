@@ -23,7 +23,7 @@ class Tensor {
 
    protected:
     // Construct a Tensor without any data buffer.
-    Tensor(std::vector<size_t> dims) : data(nullptr), dims(dims) {}
+    explicit Tensor(std::vector<size_t> dims) : data(nullptr), dims(dims) {}
 
     // Move constructor
     Tensor(Tensor&& other) noexcept : data(other.data), dims(std::move(other.dims)) {
