@@ -1,8 +1,11 @@
 #pragma once
-#include <tensor.h>
+
+#include <Tensor.h>
+
+#include <memory>
 
 class UnaryOp : public Tensor {
-    shared_ptr<Tensor> child;
+    std::shared_ptr<Tensor> child;
     // TODO: define OpType
     // OpType operator;
-}
+};
