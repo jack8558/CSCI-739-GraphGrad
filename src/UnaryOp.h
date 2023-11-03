@@ -6,6 +6,10 @@
 
 enum UnaryOpType {
     NEG,
+    RECIP,
+    RELU,
+    BIN,
+    EXP,
 };
 
 class UnaryOp : public Tensor {
@@ -25,6 +29,18 @@ class UnaryOp : public Tensor {
             switch (this->op_type) {
                 case NEG:
                     scalar_func = [](scalar_t x) { return -x; };
+                    break;
+                case RECIP:
+                    scalar_func = [](scalar_t x) { return 1.0 / x; };
+                    break;
+                case RELU:
+                    scalar_func = [](scalar_t x) { return x > 0.0 ? x : 0.0; };
+                    break;
+                case BIN:
+                    scalar_func = [](scalar_t x) { return x > 0.0 ? 1.0 : 0.0; };
+                    break;
+                case EXP:
+                    scalar_func = [](scalar_t x) { return std::exp(x); };
                     break;
             }
 
