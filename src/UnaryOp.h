@@ -4,7 +4,7 @@
 
 #include "Tensor.h"
 
-enum UnaryOpType {
+enum class UnaryOpType {
     NEG,
     RECIP,
     RELU,
@@ -27,21 +27,23 @@ class UnaryOp : public Tensor {
             // Get a function to compute each value.
             scalar_t (*scalar_func)(scalar_t);
             switch (this->op_type) {
-                case NEG:
+                case UnaryOpType::NEG:
                     scalar_func = [](scalar_t x) { return -x; };
                     break;
-                case RECIP:
+                case UnaryOpType::RECIP:
                     scalar_func = [](scalar_t x) { return 1.0 / x; };
                     break;
-                case RELU:
+                case UnaryOpType::RELU:
                     scalar_func = [](scalar_t x) { return x > 0.0 ? x : 0.0; };
                     break;
-                case BIN:
+                case UnaryOpType::BIN:
                     scalar_func = [](scalar_t x) { return x > 0.0 ? 1.0 : 0.0; };
                     break;
-                case EXP:
+                case UnaryOpType::EXP:
                     scalar_func = [](scalar_t x) { return std::exp(x); };
                     break;
+                default:
+                    throw std::domain_error("bad op_type");
             }
 
             // Fill the buffer with computed values.
