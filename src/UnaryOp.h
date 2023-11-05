@@ -59,3 +59,9 @@ class UnaryOp : public Tensor {
     std::shared_ptr<Tensor> child;
     UnaryOpType op_type;
 };
+
+// Operator overloads:
+
+std::shared_ptr<Tensor> operator-(std::shared_ptr<Tensor> t) {
+    return std::shared_ptr<Tensor>(new UnaryOp(t, UnaryOpType::NEG));
+}

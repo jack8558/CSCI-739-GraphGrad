@@ -92,11 +92,3 @@ class Tensor {
     // May be empty if this Tensor has no cached data.
     std::optional<std::vector<scalar_t>> data;
 };
-
-// Operators on Tensors:
-
-#include "UnaryOp.h"
-
-std::shared_ptr<Tensor> operator-(std::shared_ptr<Tensor> t) {
-    return std::shared_ptr<Tensor>(new UnaryOp(t, UnaryOpType::NEG));
-}
