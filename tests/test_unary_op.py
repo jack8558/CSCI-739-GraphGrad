@@ -14,19 +14,17 @@ import graphgrad as gg
 import numpy as np
 
 
-class TestUnaryOP:
-
-    def test_neg(self, gg_tensor, torch_tensor):
-        assert np.isclose(gg.neg(gg_tensor).to_list(), torch.neg(torch_tensor).tolist(), rtol=1e-4).all()
-
-    def test_reciprocal(self, gg_tensor, torch_tensor):
-        assert np.isclose(gg.reciprocal(gg_tensor).to_list(), torch.reciprocal(torch_tensor).tolist(), rtol=1e-4).all()
-
-    def test_relu(self, gg_tensor, torch_tensor):
-        assert np.isclose(gg.relu(gg_tensor).to_list(), torch.nn.functional.relu(torch_tensor).tolist(), rtol=1e-4).all()
-
-    def test_binilarize(self, gg_tensor, torch_tensor):
-        assert np.isclose(gg.binilarize(gg_tensor).to_list(), (torch_tensor > 0.0).double(), rtol=1e-4).all()
-
-    def test_exp(self, gg_tensor, torch_tensor):
-        assert np.isclose(gg.exp(gg_tensor).to_list(), torch.exp(torch_tensor).tolist(), rtol=1e-4).all()
+@pytest.mark.parametrize(
+    "gg_func, pytorch_func",
+    [
+        [gg.neg, torch.neg],
+        [gg.reciprocal, torch.reciprocal],
+        [gg.relu, torch.nn.functional.relu],
+        [gg.binilarize, lambda torch_tensor: (torch_tensor > 0.0).double()],
+        [gg.exp, torch.exp],
+    ],
+)
+def test_unary_op(gg_tensor, torch_tensor, gg_func, pytorch_func):
+    gg_result = gg_func(gg_tensor)
+    pytorch_result = pytorch_func(torch_tensor)
+    assert np.isclose(gg_result.to_list(), pytorch_result, rtol=1e-4).all()

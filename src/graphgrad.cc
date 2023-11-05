@@ -39,44 +39,38 @@ py::object to_list(Tensor& t) {
 }
 
 PYBIND11_MODULE(graphgrad, m) {
-    py::class_<Tensor, std::shared_ptr<Tensor>>(m, "Tensor")
+    auto tensor_class = py::class_<Tensor, std::shared_ptr<Tensor>>(m, "Tensor");
+    tensor_class
         .def_static("rand", &Tensor::rand)
         .def("to_list", to_list)
         .def("__repr__", [](Tensor& t) {
             t.eval();
             return t.to_string();
-        })
-        .def("neg", [](std::shared_ptr<Tensor> t) { return std::shared_ptr<Tensor>(new UnaryOp(t, UnaryOpType::NEG)); })
-        .def("reciprocal", [](std::shared_ptr<Tensor> t) { return std::shared_ptr<Tensor>(new UnaryOp(t, UnaryOpType::RECIP)); })
-        .def("relu", [](std::shared_ptr<Tensor> t) { return std::shared_ptr<Tensor>(new UnaryOp(t, UnaryOpType::RELU)); })
-        .def("binilarize", [](std::shared_ptr<Tensor> t) { return std::shared_ptr<Tensor>(new UnaryOp(t, UnaryOpType::BIN)); })
-        .def("exp", [](std::shared_ptr<Tensor> t) { return std::shared_ptr<Tensor>(new UnaryOp(t, UnaryOpType::EXP)); })
-        .def("add", [](std::shared_ptr<Tensor> t, std::shared_ptr<Tensor> t2) { return std::shared_ptr<Tensor>(new BinaryOp(t, t2, BinaryOpType::ADD)); })
-        .def("subtract", [](std::shared_ptr<Tensor> t, std::shared_ptr<Tensor> t2) { return std::shared_ptr<Tensor>(new BinaryOp(t, t2, BinaryOpType::SUB)); })
-        .def("mult", [](std::shared_ptr<Tensor> t, std::shared_ptr<Tensor> t2) { return std::shared_ptr<Tensor>(new BinaryOp(t, t2, BinaryOpType::MULT)); })
-        .def("elementwise_mult", [](std::shared_ptr<Tensor> t, std::shared_ptr<Tensor> t2) { return std::shared_ptr<Tensor>(new BinaryOp(t, t2, BinaryOpType::ELMULT)); })
-        .def("matmul", [](std::shared_ptr<Tensor> t, std::shared_ptr<Tensor> t2) { return std::shared_ptr<Tensor>(new BinaryOp(t, t2, BinaryOpType::MATMUL)); })
-        .def("pow", [](std::shared_ptr<Tensor> t, std::shared_ptr<Tensor> t2) { return std::shared_ptr<Tensor>(new BinaryOp(t, t2, BinaryOpType::POW)); });
+        });
 
-    m.def("neg", [](std::shared_ptr<Tensor> t) { return std::shared_ptr<Tensor>(new UnaryOp(t, UnaryOpType::NEG)); });
+#define DEF_TENSOR_FUNC(name, func_lambda) \
+    {                                      \
+        auto func = (func_lambda);         \
+        tensor_class.def(name, func);      \
+        m.def(name, func);                 \
+    }
 
-    m.def("reciprocal", [](std::shared_ptr<Tensor> t) { return std::shared_ptr<Tensor>(new UnaryOp(t, UnaryOpType::RECIP)); });
+#define DEF_UNARY(name, op_type) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t) { \
+    return std::shared_ptr<Tensor>(new UnaryOp(t, UnaryOpType::op_type));              \
+});
+    DEF_UNARY("neg", NEG);
+    DEF_UNARY("reciprocal", RECIP);
+    DEF_UNARY("relu", RELU);
+    DEF_UNARY("binilarize", BIN);
+    DEF_UNARY("exp", EXP);
 
-    m.def("relu", [](std::shared_ptr<Tensor> t) { return std::shared_ptr<Tensor>(new UnaryOp(t, UnaryOpType::RELU)); });
-
-    m.def("binilarize", [](std::shared_ptr<Tensor> t) { return std::shared_ptr<Tensor>(new UnaryOp(t, UnaryOpType::BIN)); });
-
-    m.def("exp", [](std::shared_ptr<Tensor> t) { return std::shared_ptr<Tensor>(new UnaryOp(t, UnaryOpType::EXP)); });
-
-    m.def("add", [](std::shared_ptr<Tensor> t, std::shared_ptr<Tensor> t2) { return std::shared_ptr<Tensor>(new BinaryOp(t, t2, BinaryOpType::ADD)); });
-
-    m.def("subtract", [](std::shared_ptr<Tensor> t, std::shared_ptr<Tensor> t2) { return std::shared_ptr<Tensor>(new BinaryOp(t, t2, BinaryOpType::SUB)); });
-
-    m.def("mult", [](std::shared_ptr<Tensor> t, std::shared_ptr<Tensor> t2) { return std::shared_ptr<Tensor>(new BinaryOp(t, t2, BinaryOpType::MULT)); });
-
-    m.def("elementwise_mult", [](std::shared_ptr<Tensor> t, std::shared_ptr<Tensor> t2) { return std::shared_ptr<Tensor>(new BinaryOp(t, t2, BinaryOpType::ELMULT)); });
-
-    m.def("matmul", [](std::shared_ptr<Tensor> t, std::shared_ptr<Tensor> t2) { return std::shared_ptr<Tensor>(new BinaryOp(t, t2, BinaryOpType::MATMUL)); });
-
-    m.def("pow", [](std::shared_ptr<Tensor> t, std::shared_ptr<Tensor> t2) { return std::shared_ptr<Tensor>(new BinaryOp(t, t2, BinaryOpType::POW)); });
+#define DEF_BINARY(name, op_type) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2) { \
+    return std::shared_ptr<Tensor>(new BinaryOp(t1, t2, BinaryOpType::op_type));                                     \
+});
+    DEF_BINARY("add", ADD);
+    DEF_BINARY("subtract", SUB);
+    DEF_BINARY("mult", MULT);
+    DEF_BINARY("elementwise_mult", ELMULT);
+    DEF_BINARY("matmul", MATMUL);
+    DEF_BINARY("pow", POW);
 }
