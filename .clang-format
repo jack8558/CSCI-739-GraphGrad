@@ -1,0 +1,8 @@
+BasedOnStyle: Google
+ColumnLimit: 0
+IndentWidth: 4
+InsertBraces: true
+IndentPPDirectives: BeforeHash
+NamespaceIndentation: Inner
+DerivePointerAlignment: false
+PointerAlignment: Left
