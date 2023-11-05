@@ -18,6 +18,7 @@ import numpy as np
     "gg_func, pytorch_func",
     [
         [gg.neg, torch.neg],
+        [lambda gg_tensor: -gg_tensor, torch.neg],
         [gg.reciprocal, torch.reciprocal],
         [gg.relu, torch.nn.functional.relu],
         [gg.binilarize, lambda torch_tensor: (torch_tensor > 0.0).double()],

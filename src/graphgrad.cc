@@ -59,6 +59,7 @@ PYBIND11_MODULE(graphgrad, m) {
     return std::shared_ptr<Tensor>(new UnaryOp(t, UnaryOpType::op_type));              \
 });
     DEF_UNARY("neg", NEG);
+    tensor_class.def("__neg__", [](std::shared_ptr<Tensor> t) { return -t; });
     DEF_UNARY("reciprocal", RECIP);
     DEF_UNARY("relu", RELU);
     DEF_UNARY("binilarize", BIN);
