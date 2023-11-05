@@ -93,18 +93,6 @@ class BinaryOp : public Tensor {
     }
 
    protected:
-    // Allocate the data buffer for this tensor and return a reference to it.
-    // The buffer size is equal to the product of dims of tensor1 or row1 x col2 for matmul.
-    // Throws an exception if this tensor already has data allocated.
-    std::vector<scalar_t>& allocate_data() override {
-        if (this->data) {
-            throw std::runtime_error("called allocate_data() on a Tensor with data already allocated");
-        }
-
-        this->data.emplace(product(this->dims));
-        return *this->data;
-    }
-
     static std::vector<size_t> get_dims(const Tensor& left, const Tensor& right, BinaryOpType op_type) {
         switch (op_type) {
             case BinaryOpType::MATMUL:
