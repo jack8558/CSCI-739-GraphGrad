@@ -96,9 +96,23 @@ class BinaryOp : public Tensor {
     static std::vector<size_t> get_dims(const Tensor& left, const Tensor& right, BinaryOpType op_type) {
         switch (op_type) {
             case BinaryOpType::MATMUL:
+                if (left.dims.size() != 2 || right.dims.size() != 2 || left.dims[1] != right.dims[0]) {
+                    std::string error_message = "invalid matmul dims: left.dims=";
+                    error_message += vector_to_string(left.dims);
+                    error_message += ", right.dims=";
+                    error_message += vector_to_string(right.dims);
+                    throw py::value_error(error_message);
+                }
                 return std::vector<size_t>{left.dims[0], right.dims[1]};
 
             default:
+                if (left.dims != right.dims) {
+                    std::string error_message = "binary op dims mismatch: left.dims=";
+                    error_message += vector_to_string(left.dims);
+                    error_message += ", right.dims=";
+                    error_message += vector_to_string(right.dims);
+                    throw py::value_error(error_message);
+                }
                 return left.dims;
         }
     }

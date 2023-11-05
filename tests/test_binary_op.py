@@ -73,3 +73,22 @@ class TestBinaryOP:
             torch.matmul(torch_tensor, torch_tensor3).tolist(),
             rtol=1e-4,
         ).all()
+
+    @pytest.mark.parametrize(
+        "shape1, shape2",
+        [
+            # non-2D inputs
+            ([6], [6]),
+            ([3], [3, 4]),
+            ([3, 4], [4]),
+            # middle dimension doesn't match
+            ([3, 4], [3, 4]),
+            ([10, 32], [10, 64]),
+            ([10, 32], [5, 64]),
+        ],
+    )
+    def test_matmul_shape_mismatch_raises(self, shape1, shape2):
+        tensor1 = gg.Tensor.rand(shape1)
+        tensor2 = gg.Tensor.rand(shape2)
+        with pytest.raises(ValueError):
+            gg.matmul(tensor1, tensor2)
