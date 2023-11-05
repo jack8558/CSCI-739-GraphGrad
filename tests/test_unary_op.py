@@ -14,18 +14,20 @@ import graphgrad as gg
 import numpy as np
 
 
-@pytest.mark.parametrize(
-    "gg_func, pytorch_func",
-    [
-        [gg.neg, torch.neg],
-        [lambda gg_tensor: -gg_tensor, torch.neg],
-        [gg.reciprocal, torch.reciprocal],
-        [gg.relu, torch.nn.functional.relu],
-        [gg.binilarize, lambda torch_tensor: (torch_tensor > 0.0).double()],
-        [gg.exp, torch.exp],
-    ],
-)
-def test_unary_op(gg_tensor, torch_tensor, gg_func, pytorch_func):
+# The different unary ops to test.
+# Each item is a tuple of (GraphGrad op, equivalent PyTorch op).
+UNARY_OPS = [
+    (gg.neg, torch.neg),
+    (lambda gg_tensor: -gg_tensor, torch.neg),
+    (gg.reciprocal, torch.reciprocal),
+    (gg.relu, torch.nn.functional.relu),
+    (gg.binilarize, lambda torch_tensor: (torch_tensor > 0.0).double()),
+    (gg.exp, torch.exp),
+]
+
+
+@pytest.mark.parametrize("gg_func, torch_func", UNARY_OPS)
+def test_unary_op(gg_tensor, torch_tensor, gg_func, torch_func):
     gg_result = gg_func(gg_tensor)
-    pytorch_result = pytorch_func(torch_tensor)
-    assert np.isclose(gg_result.to_list(), pytorch_result, rtol=1e-4).all()
+    torch_result = torch_func(torch_tensor)
+    assert np.isclose(gg_result.to_list(), torch_result, rtol=1e-4).all()
