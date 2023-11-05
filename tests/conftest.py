@@ -14,13 +14,13 @@ import graphgrad as gg
 import numpy as np
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def gg_tensor():
     tensor = gg.Tensor.rand([5, 10])
     return tensor
 
 
-@pytest.fixture(scope='session')
+@pytest.fixture(scope="session")
 def torch_tensor(gg_tensor):
     tensor = torch.tensor(gg_tensor.to_list())
     assert np.isclose(gg_tensor.to_list(), tensor.tolist(), rtol=1e-4).all()
