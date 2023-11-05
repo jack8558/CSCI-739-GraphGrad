@@ -74,7 +74,7 @@ class Tensor {
     // Allocate the data buffer for this tensor and return a reference to it.
     // The buffer size is equal to the product of dims.
     // Throws an exception if this tensor already has data allocated.
-    std::vector<scalar_t>& allocate_data() {
+    virtual std::vector<scalar_t>& allocate_data() {
         if (this->data) {
             throw std::runtime_error("called allocate_data() on a Tensor with data already allocated");
         }
