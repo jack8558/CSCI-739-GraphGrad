@@ -10,6 +10,7 @@ enum class UnaryOpType {
     RELU,
     BIN,
     EXP,
+    TRANSPOSE,
 };
 
 class UnaryOp : public Tensor {
@@ -42,14 +43,30 @@ class UnaryOp : public Tensor {
                 case UnaryOpType::EXP:
                     scalar_func = [](scalar_t x) { return std::exp(x); };
                     break;
+                case UnaryOpType::TRANSPOSE:
+                    break;
                 default:
                     throw std::domain_error("bad op_type");
             }
 
-            // Fill the buffer with computed values.
-            for (size_t i = 0; i < data.size(); i++) {
-                data[i] = scalar_func(child_data[i]);
+            if (this->op_type == UnaryOpType::TRANSPOSE){
+                // Currently only support 2D transpose
+                for (size_t i = 0; i < data.size(); i++) {
+                    size_t row = i / this->dims[0];
+                    size_t col = i % this->dims[0];
+
+                    data[col * (this->dims[1]) + row] = child_data[i];
+                }
+                this->dims = {this->dims[1], this->dims[0]};
             }
+            else {
+                // Fill the buffer with computed values.
+                for (size_t i = 0; i < data.size(); i++) {
+                    data[i] = scalar_func(child_data[i]);
+                }
+            }
+
+            
         }
 
         return data->data();
