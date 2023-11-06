@@ -49,7 +49,7 @@ class UnaryOp : public Tensor {
                     throw std::domain_error("bad op_type");
             }
 
-            if (this->op_type == UnaryOpType::TRANSPOSE){
+            if (this->op_type == UnaryOpType::TRANSPOSE) {
                 // Currently only support 2D transpose
                 for (size_t i = 0; i < data.size(); i++) {
                     size_t row = i / this->dims[0];
@@ -58,15 +58,12 @@ class UnaryOp : public Tensor {
                     data[col * (this->dims[1]) + row] = child_data[i];
                 }
                 this->dims = {this->dims[1], this->dims[0]};
-            }
-            else {
+            } else {
                 // Fill the buffer with computed values.
                 for (size_t i = 0; i < data.size(); i++) {
                     data[i] = scalar_func(child_data[i]);
                 }
             }
-
-            
         }
 
         return data->data();
