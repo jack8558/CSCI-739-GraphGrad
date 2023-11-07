@@ -15,57 +15,86 @@ import numpy as np
 
 
 @pytest.fixture(scope="class")
-def gg_tensor2():
-    tensor = gg.Tensor.rand([5, 10])
-    return tensor
+def gg_scalar1():
+    return gg.Tensor.rand([1])
 
 
 @pytest.fixture(scope="class")
-def torch_tensor2(gg_tensor2):
-    tensor = torch.tensor(gg_tensor2.to_list())
-    assert np.isclose(gg_tensor2.to_list(), tensor.tolist(), rtol=1e-4).all()
-    return tensor
+def gg_scalar2():
+    return gg.Tensor.rand([1, 1])
 
 
 @pytest.fixture(scope="class")
-def gg_tensor3():
-    tensor = gg.Tensor.rand([10, 5])
-    return tensor
+def gg_scalar3():
+    return gg.Tensor.rand([1, 1, 1])
 
-
-@pytest.fixture(scope="class")
-def torch_tensor3(gg_tensor3):
-    tensor = torch.tensor(gg_tensor3.to_list())
-    assert np.isclose(gg_tensor3.to_list(), tensor.tolist(), rtol=1e-4).all()
-    return tensor
 
 
 class TestBinaryOP:
-    # The different pointwise binary ops to test.
+    # The different pointwise/scalar binary ops to test.
     # Each item is a tuple of (GraphGrad op, equivalent PyTorch op).
+    # Each op has tests for all ways to call it from graphgrad to verify correct pybind setup
+    # Note: Does not include matmul, which requires different checks
     BINARY_OPS = [
+        # Addition
         (gg.add, torch.add),
+        (lambda gg_tensor, gg_tensor2: gg_tensor.add(gg_tensor2), torch.add),
+
+        # Subtraction
         (gg.subtract, torch.subtract),
-        # (gg.mult, torch.mul),
-        (gg.elementwise_mult, torch.mul),
-        # (gg.pow, torch.pow),
+        (lambda gg_tensor, gg_tensor2: gg_tensor.subtract(gg_tensor2), torch.subtract),
+
+        # Multiplication
+        # (gg.mul, torch.mul),
+        # (lambda gg_tensor, gg_tensor2: gg_tensor.mul(gg_tensor2), torch.mul),
+
+        # Power
+        (gg.pow, torch.pow),
+        (lambda gg_tensor, gg_tensor2: gg_tensor.pow(gg_tensor2), torch.pow),
+    ]
+
+    BINARY_INPUTS = [
+        # tensor, tensor
+        ("gg_tensor_5_10", "gg_tensor_5_10"),
+        ("gg_tensor_10_10", "gg_tensor_10_10"),
+        ("gg_tensor_50_100", "gg_tensor_50_100"),
+
+        # tensor, scalar
+        ("gg_tensor_5_10", "gg_scalar1"),
+        ("gg_tensor_10_10", "gg_scalar2"),
+        ("gg_tensor_50_100", "gg_scalar3"),
+
+        # scalar, tensor
+        ("gg_scalar1", "gg_tensor_5_10"),
+        ("gg_scalar2", "gg_tensor_10_10"),
+        ("gg_scalar3", "gg_tensor_50_100"),
     ]
 
     @pytest.mark.parametrize("gg_func, torch_func", BINARY_OPS)
-    def test_pointwise_binary_op(
-        self, gg_tensor, torch_tensor, gg_tensor2, torch_tensor2, gg_func, torch_func
+    @pytest.mark.parametrize("gg_left, gg_right", BINARY_INPUTS)
+    def test_elementwise_binary_op(
+        self, 
+        gg_left,
+        gg_right,
+        gg_func, 
+        torch_func,
+        request,
     ):
-        gg_result = gg_func(gg_tensor, gg_tensor2)
-        torch_result = torch_func(torch_tensor, torch_tensor2)
-        assert np.isclose(gg_result.to_list(), torch_result, rtol=1e-4).all()
+        gg_left, gg_right =  request.getfixturevalue(gg_left), request.getfixturevalue(gg_right)
+        gg_result = gg_func(gg_left, gg_right)
+        torch_left = torch.tensor(gg_left.to_list())
+        torch_right = torch.tensor(gg_right.to_list())
+        torch_result = torch_func(torch_left, torch_right)
+        assert np.isclose(gg_result.to_list(), torch_result.tolist(), rtol=1e-4).all()
 
     @pytest.mark.parametrize("gg_op", [gg_op for gg_op, _ in BINARY_OPS])
-    def test_pointwise_binary_op_shape_mismatch_raises(self, gg_op):
+    def test_elementwise_binary_op_shape_mismatch_raises(self, gg_op):
         tensor1 = gg.Tensor.rand([3, 4])
         tensor2 = gg.Tensor.rand([4, 3])
         with pytest.raises(ValueError):
             gg_op(tensor1, tensor2)
 
+    # Matmul tests separate?
     def test_matmul(self, gg_tensor, torch_tensor, gg_tensor3, torch_tensor3):
         print(gg.matmul(gg_tensor, gg_tensor3))
         assert np.isclose(
