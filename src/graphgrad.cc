@@ -10,6 +10,7 @@ namespace py = pybind11;
 #include "BinaryOp.h"
 #include "Tensor.h"
 #include "UnaryOp.h"
+#include "python_data_to_tensor.h"
 
 py::object make_sublist(const std::vector<size_t>& dims, const std::vector<size_t>& strides, const scalar_t* data, size_t dim) {
     if (dim == dims.size()) {
@@ -41,7 +42,9 @@ py::object to_list(Tensor& t) {
 PYBIND11_MODULE(graphgrad, m) {
     auto tensor_class = py::class_<Tensor, std::shared_ptr<Tensor>>(m, "Tensor");
     tensor_class
+        .def(py::init(&python_data_to_tensor))
         .def_static("rand", &Tensor::rand)
+        .def("dims", [](const Tensor& t) { return t.dims; })
         .def("to_list", to_list)
         .def("__repr__", [](Tensor& t) {
             t.eval();

@@ -14,12 +14,24 @@ using scalar_t = double;
 class Tensor {
    public:
     // Construct a Tensor without any data buffer.
-    explicit Tensor(std::vector<size_t> dims) : dims(dims) {}
+    // This should only be called by subclasses.
+    explicit Tensor(std::vector<size_t> dims) : dims(std::move(dims)) {}
+
+    // Construct a Tensor with the given data buffer.
+    explicit Tensor(std::vector<size_t> dims, std::vector<scalar_t> data) : dims(std::move(dims)), data(std::move(data)) {
+        assert(product(this->dims) == this->data->size());
+    }
 
     // Delete the copy constructor and copy assignment operator so Tensors won't
     // be implicitly copied.
     Tensor(const Tensor&) = delete;
     Tensor& operator=(const Tensor&) = delete;
+
+    // Move constructor.
+    Tensor(Tensor&& other) noexcept = default;
+
+    // Move assignment operator.
+    Tensor& operator=(Tensor&& other) noexcept = delete;
 
     // Destructor.
     virtual ~Tensor() {}
@@ -81,12 +93,6 @@ class Tensor {
         this->data.emplace(product(this->dims));
         return *this->data;
     }
-
-    // Move constructor.
-    Tensor(Tensor&& other) noexcept = default;
-
-    // Move assignment operator.
-    Tensor& operator=(Tensor&& other) noexcept = delete;
 
     // The Tensor's data buffer.
     // May be empty if this Tensor has no cached data.
