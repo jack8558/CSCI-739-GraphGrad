@@ -32,6 +32,8 @@ import numpy as np
         [[], [], [], []],
         [[1, 2], [3, 4]],
         [[[1], [2], [8]], [[3], [4], [9]]],
+        np.ones((3, 4, 5, 6)),
+        torch.ones((3, 4, 5, 6)),
     ],
 )
 def test_tensor_data_constructor(data):
