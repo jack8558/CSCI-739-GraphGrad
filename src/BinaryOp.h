@@ -8,8 +8,7 @@
 enum class BinaryOpType {
     ADD,
     SUB,
-    MULT,
-    ELMULT,
+    MUL,
     MATMUL,
     POW,
 };
@@ -37,14 +36,10 @@ class BinaryOp : public Tensor {
                 case BinaryOpType::SUB:
                     scalar_func = [](scalar_t x, scalar_t y) { return x - y; };
                     break;
-                case BinaryOpType::ELMULT:
-                    scalar_func = [](scalar_t x, scalar_t y) { return x * y; };
-                    break;
                 case BinaryOpType::POW:
                     scalar_func = [](scalar_t x, scalar_t y) { return std::pow(x, y); };
                     break;
-                // The below two require different dimension tensors
-                case BinaryOpType::MULT:
+                case BinaryOpType::MUL:
                     scalar_func = [](scalar_t x, scalar_t y) { return x * y; };
                     break;
                 case BinaryOpType::MATMUL:
@@ -57,22 +52,7 @@ class BinaryOp : public Tensor {
             // Fill the buffer with computed values.
             for (size_t i = 0; i < data.size(); i++) {
                 switch (this->op_type) {
-                    case BinaryOpType::MULT:
-                        if (product(this->rightChild->dims) > 1.0) {
-                            throw std::runtime_error("second tensor is not a scalar");
-                        }
-                        data[i] = scalar_func(left_child_data[i], right_child_data[0]);
-                        break;
-                    case BinaryOpType::POW:
-                        if (product(this->rightChild->dims) > 1.0) {
-                            throw std::runtime_error("second tensor is not a scalar");
-                        }
-                        data[i] = scalar_func(left_child_data[i], right_child_data[0]);
-                        break;
                     case BinaryOpType::MATMUL: {
-                        if (this->leftChild->dims[1] != this->rightChild->dims[0]) {
-                            throw std::runtime_error("Mismatched matmul matrix dimentions");
-                        }
                         size_t cols = this->rightChild->dims[1];
                         size_t width = this->leftChild->dims[1];
 
@@ -84,7 +64,15 @@ class BinaryOp : public Tensor {
                         break;
                     }
                     default:
-                        data[i] = scalar_func(left_child_data[i], right_child_data[i]);
+                        if (product(leftChild->dims) == 1){
+                            data[i] = scalar_func(left_child_data[0], right_child_data[i]);
+                        }
+                        else if (product(rightChild->dims) == 1){
+                            data[i] = scalar_func(left_child_data[i], right_child_data[0]);
+                        }
+                        else { 
+                            data[i] = scalar_func(left_child_data[i], right_child_data[i]);
+                        }
                 }
             }
         }
@@ -106,14 +94,19 @@ class BinaryOp : public Tensor {
                 return std::vector<size_t>{left.dims[0], right.dims[1]};
 
             default:
-                if (left.dims != right.dims) {
+                if (left.dims != right.dims && product(left.dims) != 1 && product(right.dims) != 1) {
                     std::string error_message = "binary op dims mismatch: left.dims=";
                     error_message += vector_to_string(left.dims);
                     error_message += ", right.dims=";
                     error_message += vector_to_string(right.dims);
                     throw py::value_error(error_message);
                 }
-                return left.dims;
+                else if (product(left.dims) == 1){
+                    return right.dims;
+                } 
+                else{
+                    return left.dims;
+                }
         }
     }
 

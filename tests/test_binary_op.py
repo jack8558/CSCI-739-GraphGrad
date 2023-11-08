@@ -85,7 +85,7 @@ class TestBinaryOP:
         torch_left = torch.tensor(gg_left.to_list())
         torch_right = torch.tensor(gg_right.to_list())
         torch_result = torch_func(torch_left, torch_right)
-        assert np.isclose(gg_result.to_list(), torch_result.tolist(), rtol=1e-4).all()
+        assert np.isclose(gg_result.to_list(), torch_result, rtol=1e-4).all()
 
     @pytest.mark.parametrize("gg_op", [gg_op for gg_op, _ in BINARY_OPS])
     def test_elementwise_binary_op_shape_mismatch_raises(self, gg_op):

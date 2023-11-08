@@ -74,8 +74,7 @@ PYBIND11_MODULE(graphgrad, m) {
 });
     DEF_BINARY("add", ADD);
     DEF_BINARY("subtract", SUB);
-    DEF_BINARY("mult", MULT);
-    DEF_BINARY("elementwise_mult", ELMULT);
+    DEF_BINARY("mul", MUL);
     DEF_BINARY("matmul", MATMUL);
     DEF_BINARY("pow", POW);
 }
