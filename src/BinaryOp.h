@@ -16,7 +16,7 @@ enum class BinaryOpType {
 class BinaryOp : public Tensor {
    public:
     BinaryOp(std::shared_ptr<Tensor> arg1, std::shared_ptr<Tensor> arg2, BinaryOpType op_type)
-        : Tensor(get_dims(*arg1, *arg2, op_type)), leftChild(arg1), rightChild(arg2), op_type(op_type) {}
+        : Tensor(verify_and_get_dims(*arg1, *arg2, op_type)), leftChild(arg1), rightChild(arg2), op_type(op_type) {}
 
     const scalar_t* eval() override {
         if (!this->data) {
@@ -39,9 +39,7 @@ class BinaryOp : public Tensor {
                 case BinaryOpType::POW:
                     scalar_func = [](scalar_t x, scalar_t y) { return std::pow(x, y); };
                     break;
-                case BinaryOpType::MUL:
-                    scalar_func = [](scalar_t x, scalar_t y) { return x * y; };
-                    break;
+                case BinaryOpType::MUL:  // MUL and MATMUL implementation of scalar_func is same
                 case BinaryOpType::MATMUL:
                     scalar_func = [](scalar_t x, scalar_t y) { return x * y; };
                     break;
@@ -81,7 +79,7 @@ class BinaryOp : public Tensor {
     }
 
    protected:
-    static std::vector<size_t> get_dims(const Tensor& left, const Tensor& right, BinaryOpType op_type) {
+    static std::vector<size_t> verify_and_get_dims(const Tensor& left, const Tensor& right, BinaryOpType op_type) {
         switch (op_type) {
             case BinaryOpType::MATMUL:
                 if (left.dims.size() != 2 || right.dims.size() != 2 || left.dims[1] != right.dims[0]) {

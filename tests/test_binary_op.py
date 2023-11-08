@@ -68,11 +68,16 @@ class TestBinaryOP:
         ("gg_scalar1", "gg_tensor_5_10"),
         ("gg_scalar2", "gg_tensor_10_10"),
         ("gg_scalar3", "gg_tensor_50_100"),
+
+        # scalar, scalar
+        ("gg_scalar1", "gg_scalar1"),
+        ("gg_scalar2", "gg_scalar2"),
+        ("gg_scalar3", "gg_scalar3"),
     ]
 
     @pytest.mark.parametrize("gg_func, torch_func", BINARY_OPS)
     @pytest.mark.parametrize("gg_left, gg_right", BINARY_INPUTS)
-    def test_elementwise_binary_op(
+    def test_binary_op(
         self, 
         gg_left,
         gg_right,
@@ -82,24 +87,36 @@ class TestBinaryOP:
     ):
         gg_left, gg_right =  request.getfixturevalue(gg_left), request.getfixturevalue(gg_right)
         gg_result = gg_func(gg_left, gg_right)
-        torch_left = torch.tensor(gg_left.to_list())
-        torch_right = torch.tensor(gg_right.to_list())
+        torch_left = torch.tensor(gg_left.to_list(), dtype=torch.float64)
+        torch_right = torch.tensor(gg_right.to_list(), dtype=torch.float64)
         torch_result = torch_func(torch_left, torch_right)
         assert np.isclose(gg_result.to_list(), torch_result, rtol=1e-4).all()
 
     @pytest.mark.parametrize("gg_op", [gg_op for gg_op, _ in BINARY_OPS])
-    def test_elementwise_binary_op_shape_mismatch_raises(self, gg_op):
+    def test_binary_op_shape_mismatch_raises(self, gg_op):
         tensor1 = gg.Tensor.rand([3, 4])
         tensor2 = gg.Tensor.rand([4, 3])
         with pytest.raises(ValueError):
             gg_op(tensor1, tensor2)
 
-    # Matmul tests separate?
-    def test_matmul(self, gg_tensor, torch_tensor, gg_tensor3, torch_tensor3):
-        print(gg.matmul(gg_tensor, gg_tensor3))
+    MATMUL_INPUTS = [
+        # 2D scalar, 2D scalar
+        ("gg_scalar2", "gg_scalar2"),
+
+        # 2D tensor, 2D tensor
+        ("gg_tensor_5_10", "gg_tensor_10_10")
+    ]
+
+    @pytest.mark.parametrize("gg_left, gg_right", MATMUL_INPUTS)
+    def test_matmul(self, gg_left, gg_right, request):
+        gg_left, gg_right = request.getfixturevalue(gg_left), request.getfixturevalue(gg_right)
+        torch_left = torch.tensor(gg_left.to_list(), dtype=torch.float64)
+        torch_right = torch.tensor(gg_right.to_list(), dtype=torch.float64)
+        gg_result = gg.matmul(gg_left, gg_right)
+        # need to assert dims are correct
         assert np.isclose(
-            gg.matmul(gg_tensor, gg_tensor3).to_list(),
-            torch.matmul(torch_tensor, torch_tensor3).tolist(),
+            gg_result.to_list(),
+            torch.matmul(torch_left, torch_right),
             rtol=1e-4,
         ).all()
 

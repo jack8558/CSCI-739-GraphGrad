@@ -79,6 +79,19 @@ class Tensor {
         return result;
     }
 
+    std::shared_ptr<Tensor> reshape(std::vector<size_t> new_dims) {
+        if(product(this->dims) != product(new_dims))
+            throw std::runtime_error("Mismatched dims in reshape");
+
+        // Allocate a new tensor with the given dims.
+        auto result = std::make_shared<Tensor>(new_dims);
+        result->allocate_data();
+        this->eval();
+        result->data = this->data;
+
+        return result;
+    }
+
     // The Tensor's dimensions.
     std::vector<size_t> dims;
 

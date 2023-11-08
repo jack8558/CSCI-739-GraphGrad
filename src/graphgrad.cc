@@ -45,11 +45,13 @@ PYBIND11_MODULE(graphgrad, m) {
         .def(py::init(&python_data_to_tensor))
         .def_static("rand", &Tensor::rand)
         .def("dims", [](const Tensor& t) { return t.dims; })
+        .def("reshape", &Tensor::reshape)
         .def("to_list", to_list)
         .def("__repr__", [](Tensor& t) {
             t.eval();
             return t.to_string();
         });
+    m.def("reshape", &Tensor::reshape);
 
 #define DEF_TENSOR_FUNC(name, func_lambda) \
     {                                      \

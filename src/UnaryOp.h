@@ -15,7 +15,8 @@ enum class UnaryOpType {
 
 class UnaryOp : public Tensor {
    public:
-    UnaryOp(std::shared_ptr<Tensor> arg, UnaryOpType op_type) : Tensor(arg->dims), child(arg), op_type(op_type) {}
+    UnaryOp(std::shared_ptr<Tensor> arg, UnaryOpType op_type) 
+        : Tensor(verify_and_get_dims(*arg, op_type)), child(arg), op_type(op_type) {}
 
     const scalar_t* eval() override {
         if (!this->data) {
@@ -43,26 +44,27 @@ class UnaryOp : public Tensor {
                 case UnaryOpType::EXP:
                     scalar_func = [](scalar_t x) { return std::exp(x); };
                     break;
-                case UnaryOpType::TRANSPOSE:
-                    break;
                 default:
                     throw std::domain_error("bad op_type");
             }
 
-            if (this->op_type == UnaryOpType::TRANSPOSE) {
-                // Currently only support 2D transpose
-                for (size_t i = 0; i < data.size(); i++) {
-                    size_t row = i / this->dims[0];
-                    size_t col = i % this->dims[0];
+            switch(this->op_type){
+                case UnaryOpType::TRANSPOSE: {
+                    // Currently only support 2D transpose
+                    for (size_t i = 0; i < data.size(); i++) {
+                        size_t row = i / this->dims[1];
+                        size_t col = i % this->dims[1];
 
-                    data[col * (this->dims[1]) + row] = child_data[i];
+                        data[col * (this->dims[0]) + row] = child_data[i];
+                    }
+                    break;
                 }
-                this->dims = {this->dims[1], this->dims[0]};
-            } else {
-                // Fill the buffer with computed values.
-                for (size_t i = 0; i < data.size(); i++) {
-                    data[i] = scalar_func(child_data[i]);
-                }
+                
+                default:
+                    // Fill the buffer with computed values.
+                    for (size_t i = 0; i < data.size(); i++) {
+                        data[i] = scalar_func(child_data[i]);
+                    }
             }
         }
 
@@ -70,6 +72,22 @@ class UnaryOp : public Tensor {
     }
 
    protected:
+    static std::vector<size_t> verify_and_get_dims(const Tensor& tensor, UnaryOpType op_type) {
+        switch (op_type) {
+            case UnaryOpType::TRANSPOSE:
+            {
+                std::vector<size_t> new_dims(tensor.dims.size());
+                for(size_t i = 0; i < tensor.dims.size(); ++i) {
+                    new_dims[i] = tensor.dims[tensor.dims.size() - i - 1];
+                }
+                return new_dims;
+            }
+
+            default:
+                return tensor.dims;
+        }
+    }
+
     std::shared_ptr<Tensor> child;
     UnaryOpType op_type;
 };

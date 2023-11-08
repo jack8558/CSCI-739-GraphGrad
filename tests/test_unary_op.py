@@ -53,6 +53,6 @@ class TestUnaryOp:
     def test_unary_op(self, gg_tensor, gg_func, torch_func, request):
         gg_tensor = request.getfixturevalue(gg_tensor)
         gg_result = gg_func(gg_tensor)
-        torch_tensor = torch.tensor(gg_tensor.to_list())
+        torch_tensor = torch.tensor(gg_tensor.to_list(), dtype=torch.float64)
         torch_result = torch_func(torch_tensor)
         assert np.isclose(gg_result.to_list(), torch_result, rtol=1e-4).all()
