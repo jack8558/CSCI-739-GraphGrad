@@ -6,7 +6,7 @@
 
 // Returns the product of the given vector of integers.
 // If the vector is empty, returns 1.
-size_t product(const std::vector<size_t>& dims) {
+static size_t product(const std::vector<size_t>& dims) {
     size_t product = 1;
     for (auto d : dims) {
         product *= d;
@@ -16,7 +16,7 @@ size_t product(const std::vector<size_t>& dims) {
 
 // Converts a vector of values to a string, calling to_string on each element.
 template <typename T>
-std::string vector_to_string(const std::vector<T>& vec) {
+static std::string vector_to_string(const std::vector<T>& vec) {
     std::string result = "[";
 
     using std::to_string;

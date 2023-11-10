@@ -12,7 +12,7 @@ namespace py = pybind11;
 #include "UnaryOp.h"
 #include "python_data_to_tensor.h"
 
-py::object make_sublist(const std::vector<size_t>& dims, const std::vector<size_t>& strides, const scalar_t* data, size_t dim) {
+static py::object make_sublist(const std::vector<size_t>& dims, const std::vector<size_t>& strides, const scalar_t* data, size_t dim) {
     if (dim == dims.size()) {
         return py::float_(*data);
     } else {
@@ -24,7 +24,7 @@ py::object make_sublist(const std::vector<size_t>& dims, const std::vector<size_
     }
 }
 
-py::object to_list(Tensor& t) {
+static py::object to_list(Tensor& t) {
     const std::vector<size_t>& dims = t.dims;
     const size_t num_dims = dims.size();
 
@@ -46,6 +46,8 @@ PYBIND11_MODULE(graphgrad, m) {
         .def_static("rand", &Tensor::rand)
         .def("dims", [](const Tensor& t) { return t.dims; })
         .def("reshape", &Tensor::reshape)
+        .def("backward", &Tensor::backward)
+        .def_readwrite("grad", &Tensor::grad)
         .def("to_list", to_list)
         .def("__repr__", [](Tensor& t) {
             t.eval();
@@ -74,9 +76,14 @@ PYBIND11_MODULE(graphgrad, m) {
 #define DEF_BINARY(name, op_type) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2) { \
     return std::shared_ptr<Tensor>(new BinaryOp(t1, t2, BinaryOpType::op_type));                                     \
 });
-    DEF_BINARY("add", ADD);
-    DEF_BINARY("subtract", SUB);
-    DEF_BINARY("mul", MUL);
+#define DEF_BINARY_WITH_OP(name, op_type, op, py_op)                                                                        \
+    {                                                                                                                       \
+        DEF_BINARY(name, op_type);                                                                                          \
+        tensor_class.def("__" py_op "__", [](std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2) { return t1 op t2; }); \
+    }
+    DEF_BINARY_WITH_OP("add", ADD, +, "add");
+    DEF_BINARY_WITH_OP("subtract", SUB, -, "sub");
+    DEF_BINARY_WITH_OP("mul", MUL, *, "mul");
     DEF_BINARY("matmul", MATMUL);
     DEF_BINARY("pow", POW);
 }

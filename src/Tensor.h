@@ -1,6 +1,8 @@
 #pragma once
 
+#include <cassert>
 #include <cstdlib>
+#include <memory>
 #include <optional>
 #include <random>
 #include <stdexcept>
@@ -11,7 +13,7 @@
 
 using scalar_t = double;
 
-class Tensor {
+class Tensor : public std::enable_shared_from_this<Tensor> {
    public:
     // Construct a Tensor without any data buffer.
     // This should only be called by subclasses.
@@ -38,6 +40,11 @@ class Tensor {
 
     // Factory functions:
 
+    // Create a new tensor containing the given scalar value.
+    static std::shared_ptr<Tensor> from_scalar(scalar_t value) {
+        return std::make_shared<Tensor>(std::vector<size_t>{}, std::vector<scalar_t>{value});
+    }
+
     // Create a new tensor filled with random values in the range [0, 1).
     static std::shared_ptr<Tensor> rand(std::vector<size_t> dims) {
         // Allocate a new tensor with the given dims.
@@ -54,6 +61,27 @@ class Tensor {
 
         return result;
     }
+
+    // Automatic differentiation:
+
+    // For all descendant nodes `d` of this tensor, assigns the gradient of this tensor with respect
+    // to `d` to `d.grad`. The resulting `grad` tensors will be lazily-evaluated graph nodes. Any
+    // previous `grad`s will be overwritten.
+    //
+    // Throws an error if this tensor is not a scalar.
+    void backward();  // Implementation in Tensor_backward.cc
+
+    // Returns the direct child nodes of this tensor in the graph.
+    virtual std::vector<Tensor*> get_children() { return {}; }
+
+    // Propagates `this->grad` backward to the direct children of this tensor.
+    // Client code should not call this; use `backward()` instead.
+    //
+    // Requires / can assume that `this->grad` is not null.
+    virtual void backward_step() {}
+
+    // Adds the given tensor to `this->grad`, or assigns it if `this->grad` is null.
+    void add_grad(std::shared_ptr<Tensor> grad);
 
     // Other methods:
 
@@ -80,8 +108,9 @@ class Tensor {
     }
 
     std::shared_ptr<Tensor> reshape(std::vector<size_t> new_dims) {
-        if(product(this->dims) != product(new_dims))
+        if (product(this->dims) != product(new_dims)) {
             throw std::runtime_error("Mismatched dims in reshape");
+        }
 
         // Allocate a new tensor with the given dims.
         auto result = std::make_shared<Tensor>(new_dims);
@@ -94,6 +123,10 @@ class Tensor {
 
     // The Tensor's dimensions.
     std::vector<size_t> dims;
+
+    // The Tensor's gradient.
+    // May be null if this Tensor has no gradient assigned.
+    std::shared_ptr<Tensor> grad = nullptr;
 
    protected:
     // Allocate the data buffer for this tensor and return a reference to it.
@@ -109,5 +142,5 @@ class Tensor {
 
     // The Tensor's data buffer.
     // May be empty if this Tensor has no cached data.
-    std::optional<std::vector<scalar_t>> data;
+    std::optional<std::vector<scalar_t>> data = std::nullopt;
 };

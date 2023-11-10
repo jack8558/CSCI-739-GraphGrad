@@ -15,7 +15,7 @@ enum class UnaryOpType {
 
 class UnaryOp : public Tensor {
    public:
-    UnaryOp(std::shared_ptr<Tensor> arg, UnaryOpType op_type) 
+    UnaryOp(std::shared_ptr<Tensor> arg, UnaryOpType op_type)
         : Tensor(verify_and_get_dims(*arg, op_type)), child(arg), op_type(op_type) {}
 
     const scalar_t* eval() override {
@@ -48,7 +48,7 @@ class UnaryOp : public Tensor {
                     throw std::domain_error("bad op_type");
             }
 
-            switch(this->op_type){
+            switch (this->op_type) {
                 case UnaryOpType::TRANSPOSE: {
                     // Currently only support 2D transpose
                     for (size_t i = 0; i < data.size(); i++) {
@@ -59,7 +59,7 @@ class UnaryOp : public Tensor {
                     }
                     break;
                 }
-                
+
                 default:
                     // Fill the buffer with computed values.
                     for (size_t i = 0; i < data.size(); i++) {
@@ -71,13 +71,18 @@ class UnaryOp : public Tensor {
         return data->data();
     }
 
+    std::vector<Tensor*> get_children() override {
+        return {this->child.get()};
+    }
+
+    void backward_step() override;  // Implementation in Tensor_backward.cc
+
    protected:
     static std::vector<size_t> verify_and_get_dims(const Tensor& tensor, UnaryOpType op_type) {
         switch (op_type) {
-            case UnaryOpType::TRANSPOSE:
-            {
+            case UnaryOpType::TRANSPOSE: {
                 std::vector<size_t> new_dims(tensor.dims.size());
-                for(size_t i = 0; i < tensor.dims.size(); ++i) {
+                for (size_t i = 0; i < tensor.dims.size(); ++i) {
                     new_dims[i] = tensor.dims[tensor.dims.size() - i - 1];
                 }
                 return new_dims;
@@ -92,8 +97,24 @@ class UnaryOp : public Tensor {
     UnaryOpType op_type;
 };
 
+// Functions:
+
+#define IMPL_OP_FUNC(func_name, op_type)                                         \
+    inline static std::shared_ptr<Tensor> func_name(std::shared_ptr<Tensor> t) { \
+        return std::shared_ptr<Tensor>(new UnaryOp(t, UnaryOpType::op_type));    \
+    }
+
+IMPL_OP_FUNC(neg, NEG)
+IMPL_OP_FUNC(reciprocal, RECIP)
+IMPL_OP_FUNC(relu, RELU)
+IMPL_OP_FUNC(binilarize, BIN)
+IMPL_OP_FUNC(exp, EXP)
+IMPL_OP_FUNC(transpose, TRANSPOSE)
+
+#undef IMPL_OP_FUNC
+
 // Operator overloads:
 
-std::shared_ptr<Tensor> operator-(std::shared_ptr<Tensor> t) {
-    return std::shared_ptr<Tensor>(new UnaryOp(t, UnaryOpType::NEG));
+inline static std::shared_ptr<Tensor> operator-(std::shared_ptr<Tensor> t) {
+    return neg(t);
 }

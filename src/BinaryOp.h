@@ -1,5 +1,8 @@
 #pragma once
 
+#include <pybind11/pybind11.h>
+namespace py = pybind11;
+
 #include <memory>
 
 #include "Tensor.h"
@@ -62,13 +65,11 @@ class BinaryOp : public Tensor {
                         break;
                     }
                     default:
-                        if (product(leftChild->dims) == 1){
+                        if (product(leftChild->dims) == 1) {
                             data[i] = scalar_func(left_child_data[0], right_child_data[i]);
-                        }
-                        else if (product(rightChild->dims) == 1){
+                        } else if (product(rightChild->dims) == 1) {
                             data[i] = scalar_func(left_child_data[i], right_child_data[0]);
-                        }
-                        else { 
+                        } else {
                             data[i] = scalar_func(left_child_data[i], right_child_data[i]);
                         }
                 }
@@ -77,6 +78,12 @@ class BinaryOp : public Tensor {
 
         return data->data();
     }
+
+    std::vector<Tensor*> get_children() override {
+        return {this->leftChild.get(), this->rightChild.get()};
+    }
+
+    void backward_step() override;  // Implementation in Tensor_backward.cc
 
    protected:
     static std::vector<size_t> verify_and_get_dims(const Tensor& left, const Tensor& right, BinaryOpType op_type) {
@@ -98,11 +105,9 @@ class BinaryOp : public Tensor {
                     error_message += ", right.dims=";
                     error_message += vector_to_string(right.dims);
                     throw py::value_error(error_message);
-                }
-                else if (product(left.dims) == 1){
+                } else if (product(left.dims) == 1) {
                     return right.dims;
-                } 
-                else{
+                } else {
                     return left.dims;
                 }
         }
@@ -112,3 +117,16 @@ class BinaryOp : public Tensor {
     std::shared_ptr<Tensor> rightChild;
     BinaryOpType op_type;
 };
+
+// Operator overloads:
+
+#define IMPL_OPERATOR_OVERLOAD(op, op_type)                                                                     \
+    inline static std::shared_ptr<Tensor> operator op(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2) { \
+        return std::shared_ptr<Tensor>(new BinaryOp(t1, t2, BinaryOpType::op_type));                            \
+    }
+
+IMPL_OPERATOR_OVERLOAD(+, ADD)
+IMPL_OPERATOR_OVERLOAD(-, SUB)
+IMPL_OPERATOR_OVERLOAD(*, MUL)
+
+#undef IMPL_OPERATOR_OVERLOAD
