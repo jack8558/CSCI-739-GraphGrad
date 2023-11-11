@@ -10,7 +10,6 @@ enum class UnaryOpType {
     RELU,
     BIN,
     EXP,
-    TRANSPOSE,
 };
 
 class UnaryOp : public Tensor {
@@ -48,23 +47,8 @@ class UnaryOp : public Tensor {
                     throw std::domain_error("bad op_type");
             }
 
-            switch (this->op_type) {
-                case UnaryOpType::TRANSPOSE: {
-                    // Currently only support 2D transpose
-                    for (size_t i = 0; i < data.size(); i++) {
-                        size_t row = i / this->dims[1];
-                        size_t col = i % this->dims[1];
-
-                        data[col * (this->dims[0]) + row] = child_data[i];
-                    }
-                    break;
-                }
-
-                default:
-                    // Fill the buffer with computed values.
-                    for (size_t i = 0; i < data.size(); i++) {
-                        data[i] = scalar_func(child_data[i]);
-                    }
+            for (size_t i = 0; i < data.size(); i++) {
+                data[i] = scalar_func(child_data[i]);
             }
         }
 
@@ -79,18 +63,7 @@ class UnaryOp : public Tensor {
 
    protected:
     static std::vector<size_t> verify_and_get_dims(const Tensor& tensor, UnaryOpType op_type) {
-        switch (op_type) {
-            case UnaryOpType::TRANSPOSE: {
-                std::vector<size_t> new_dims(tensor.dims.size());
-                for (size_t i = 0; i < tensor.dims.size(); ++i) {
-                    new_dims[i] = tensor.dims[tensor.dims.size() - i - 1];
-                }
-                return new_dims;
-            }
-
-            default:
-                return tensor.dims;
-        }
+        return tensor.dims;
     }
 
     std::shared_ptr<Tensor> child;
@@ -109,7 +82,7 @@ IMPL_OP_FUNC(reciprocal, RECIP)
 IMPL_OP_FUNC(relu, RELU)
 IMPL_OP_FUNC(binilarize, BIN)
 IMPL_OP_FUNC(exp, EXP)
-IMPL_OP_FUNC(transpose, TRANSPOSE)
+
 
 #undef IMPL_OP_FUNC
 

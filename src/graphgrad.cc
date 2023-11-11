@@ -10,6 +10,7 @@ namespace py = pybind11;
 #include "BinaryOp.h"
 #include "Tensor.h"
 #include "UnaryOp.h"
+#include "TransposeOp.h"
 #include "python_data_to_tensor.h"
 
 static py::object make_sublist(const std::vector<size_t>& dims, const std::vector<size_t>& strides, const scalar_t* data, size_t dim) {
@@ -71,7 +72,11 @@ PYBIND11_MODULE(graphgrad, m) {
     DEF_UNARY("relu", RELU);
     DEF_UNARY("binilarize", BIN);
     DEF_UNARY("exp", EXP);
-    DEF_UNARY("transpose", TRANSPOSE);
+
+#define DEF_TRANSPOSE(name) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t, int dim0, int dim1) { \
+    return std::shared_ptr<Tensor>(new TransposeOp(t, dim0, dim1));                           \
+});
+    DEF_TRANSPOSE("transpose");
 
 #define DEF_BINARY(name, op_type) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2) { \
     return std::shared_ptr<Tensor>(new BinaryOp(t1, t2, BinaryOpType::op_type));                                     \
