@@ -48,6 +48,10 @@ class TestBinaryOP:
         # (gg.mul, torch.mul),
         # (lambda gg_tensor, gg_tensor2: gg_tensor.mul(gg_tensor2), torch.mul),
 
+        # Division
+        (gg.div, torch.div),
+        (lambda gg_tensor, gg_tensor2: gg_tensor.div(gg_tensor2), torch.div),
+
         # Power
         (gg.pow, torch.pow),
         (lambda gg_tensor, gg_tensor2: gg_tensor.pow(gg_tensor2), torch.pow),

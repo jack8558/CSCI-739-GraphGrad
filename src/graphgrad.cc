@@ -93,6 +93,7 @@ PYBIND11_MODULE(graphgrad, m) {
     DEF_BINARY_WITH_OP("add", ADD, +, "add");
     DEF_BINARY_WITH_OP("subtract", SUB, -, "sub");
     DEF_BINARY_WITH_OP("mul", MUL, *, "mul");
+    DEF_BINARY_WITH_OP("div", DIV, /, "div");
     DEF_BINARY("matmul", MATMUL);
     DEF_BINARY("pow", POW);
 }

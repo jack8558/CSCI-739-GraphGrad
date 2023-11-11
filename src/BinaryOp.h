@@ -14,6 +14,7 @@ enum class BinaryOpType {
     MUL,
     MATMUL,
     POW,
+    DIV,
 };
 
 class BinaryOp : public Tensor {
@@ -45,6 +46,9 @@ class BinaryOp : public Tensor {
                 case BinaryOpType::MUL:  // MUL and MATMUL implementation of scalar_func is same
                 case BinaryOpType::MATMUL:
                     scalar_func = [](scalar_t x, scalar_t y) { return x * y; };
+                    break;
+                case BinaryOpType::DIV:
+                    scalar_func = [](scalar_t x, scalar_t y) { return x / y; };
                     break;
                 default:
                     throw std::domain_error("bad op_type");
@@ -128,5 +132,6 @@ class BinaryOp : public Tensor {
 IMPL_OPERATOR_OVERLOAD(+, ADD)
 IMPL_OPERATOR_OVERLOAD(-, SUB)
 IMPL_OPERATOR_OVERLOAD(*, MUL)
+IMPL_OPERATOR_OVERLOAD(/, DIV)
 
 #undef IMPL_OPERATOR_OVERLOAD
