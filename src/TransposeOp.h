@@ -9,7 +9,7 @@ class TransposeOp : public Tensor {
    public:
 
     TransposeOp(std::shared_ptr<Tensor> arg, size_t dim0, size_t dim1)
-        : Tensor(verify_and_get_dims(*arg, dim0, dim1)), child(arg) {
+        : Tensor(verify_and_get_dims(*arg, dim0, dim1)), child(arg)  {
             // Check if dimensions are valid
             if (dim0 < 0 || dim0 >= dims.size() || dim1 < 0 || dim1 >= dims.size()) {
                 throw std::invalid_argument("Invalid dimensions for transpose");
@@ -17,7 +17,6 @@ class TransposeOp : public Tensor {
             this->dim0 = dim0;
             this->dim1 = dim1;
         }
-
 
     const scalar_t* eval() override {
         if (!this->data) {
@@ -27,43 +26,14 @@ class TransposeOp : public Tensor {
             // Allocate the data buffer.
             auto& data = this->allocate_data();
 
-            //2D transpose
-            for (size_t i = 0; i < data.size(); i++) {
-                size_t row = i / this->dims[1];
-                size_t col = i % this->dims[1];
+            // Computer strides
+            std::vector<size_t> strides = get_transposed_strides();
+            std::vector<size_t> original_strides = get_original_strides();
 
-                data[col * (this->dims[0]) + row] = child_data[i];
+            // Transpose the data
+            for (size_t i = 0; i < data.size(); ++i){
+                data[i] = child_data[find_original_index(strides, original_strides, i)];
             }
-
-            // // Multidimensional transpose
-            // // Compute strides
-            // std::vector<size_t> strides(dims.size(), 1);
-            // size_t current_strides = 1;
-            // strides[dims.size() - 1] = current_strides;
-
-            // for (size_t i = dims.size() - 1; i > 0; --i) {
-            //     current_strides *= dims[i];
-            //     strides[i-1] = current_strides;
-            //     // printf("%ld, %ld\n", (i-1), current_strides);
-            // }
-
-            // std::swap(strides[dim0], strides[dim1]);
-            
-            
-            // // Transpose the data
-            // for (size_t i = 0; i < data.size(); ++i){
-            //     // Compute original index 
-            //     // dims are set during construction so current dims are transposed dimes
-            //     size_t original_index = (i / strides[dims.size()-1] % dims[dims.size() - 1]);
-
-            //     for (size_t j = 0; j < dims.size()-1; ++j){
-            //         original_index += (i / strides[j] % dims[j]) * strides[j+1];
-            //     }
-
-            //     data[i] = child_data[original_index];
-            //     data[i] = original_index;
-            //     // data[i] = strides[dims.size() -1];
-            // }
         }
 
         return data->data();
@@ -80,13 +50,7 @@ class TransposeOp : public Tensor {
 
    protected:
     static std::vector<size_t> verify_and_get_dims(const Tensor& tensor, size_t dim0, size_t dim1) {
-        // for 2D
-        // std::vector<size_t> new_dims(tensor.dims.size());
-        // for (size_t i = 0; i < tensor.dims.size(); ++i) {
-        //     new_dims[i] = tensor.dims[tensor.dims.size() - i - 1];
-        // }
-
-        // for multidimension
+        // Multidimension
         std::vector<size_t> new_dims(tensor.dims.size());
         for (size_t i = 0; i < tensor.dims.size(); ++i) {
             if (i == dim0){
@@ -101,6 +65,69 @@ class TransposeOp : public Tensor {
         }
 
         return new_dims;
+    }
+
+    std::vector<size_t> get_transposed_strides(){
+        std::vector<size_t> strides(dims.size(), 1);
+        size_t current_strides = 1;
+
+        for (size_t i = dims.size() - 1; i > 0; --i) {
+            // Transposed strides
+            current_strides *= dims[i];
+            strides[i-1] = current_strides;
+        }
+
+        return strides;
+    }
+
+    std::vector<size_t> get_original_strides(){
+        std::vector<size_t> strides(dims.size(), 1);
+        size_t current_strides = 1;
+
+        for (size_t i = dims.size() - 1; i > 0; --i) {
+            // Original strides
+            if (i==dim0){
+                current_strides *= dims[dim1];
+            }
+            else if (i==dim1){
+                current_strides *= dims[dim0];
+            }
+            else{
+                current_strides *= dims[i];
+            }
+
+            strides[i-1] = current_strides;
+        }
+
+        return strides;
+    }
+
+
+    size_t find_original_index(std::vector<size_t> strides, std::vector<size_t> original_strides, size_t index){
+        size_t original_index = 0;
+        if (dim0 == dims.size()-1){
+            original_index += (index / strides[dim1] % dims[dim1]);
+        }
+        else if (dim1 == dims.size()-1) {
+            original_index += (index / strides[dim0] % dims[dim0]);
+        }
+        else{
+            original_index = (index / strides[dims.size()-1] % dims[dims.size() - 1]);
+        }
+
+        for (size_t j = 0; j < dims.size()-1; ++j){
+            if (j == dim0){
+                original_index += (index / strides[dim1] % dims[dim1]) * original_strides[j];
+            }
+            else if (j == dim1) {
+                original_index += (index / strides[dim0] % dims[dim0]) * original_strides[j];
+            }
+            else{
+                original_index += (index / strides[j] % dims[j]) * original_strides[j];
+            }
+        }
+
+        return original_index;
     }
 
     std::shared_ptr<Tensor> child;
