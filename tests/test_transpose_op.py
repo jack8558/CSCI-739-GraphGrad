@@ -13,12 +13,6 @@ sys.path.append(parent_dir)
 import graphgrad as gg
 import numpy as np
 
-# TRANSPOSE_OP = [
-#     # Transpose
-#     (gg.transpose, torch.transpose),
-#     (lambda gg_tensor: gg_tensor.transpose(), torch.transpose),
-# ]
-
 GG_TENSORS = [
         ("gg_tensor_5_10", [5,10], 0, 1),
         ("gg_tensor_10_10", [10,10], 0, 1),
@@ -30,20 +24,16 @@ GG_TENSORS = [
 
 
 class TestTransposeOp:
-    # @pytest.mark.parametrize("gg_func, torch_func", TRANSPOSE_OP)
     @pytest.mark.parametrize("gg_tensor, dims, dim0, dim1", GG_TENSORS)
     def test_unary_op(self, gg_tensor, dims, dim0, dim1, request):
         gg_tensor = request.getfixturevalue(gg_tensor)
 
-        gg_result = gg_tensor.transpose(dim1, dim0)
         torch_tensor = torch.tensor(gg_tensor.to_list(), dtype=torch.float64).view(dims)
         torch_result = torch.transpose(torch_tensor, dim0, dim1)
-        # print(gg_tensor)
-        # print()
 
-        # # print(gg_tensor)
-        # # print(torch_tensor)
-        # print(gg_result.to_list())
-        # print()
-        # print(torch_result)
+        gg_result = gg_tensor.transpose(dim1, dim0)
         assert np.isclose(gg_result.to_list(), torch_result, rtol=1e-4).all()
+
+        gg_result = gg.transpose(gg_tensor, dim0, dim1)
+        assert np.isclose(gg_result.to_list(), torch_result, rtol=1e-4).all()
+
