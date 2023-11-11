@@ -14,26 +14,28 @@ import graphgrad as gg
 import numpy as np
 
 GG_TENSORS = [
-        ("gg_tensor_5_10", [5,10], 0, 1),
-        ("gg_tensor_10_10", [10,10], 0, 1),
-        ("gg_tensor_50_100", [50,100],  0, 1),
-        ("gg_tensor_50_50_50", [50,50,50], 0, 1),
-        ("gg_tensor_50_100_200", [50,100,200], 0, 1),
-        ("gg_tensor_100_20_200_30", [100,20,200,30], 0, 1),
+        ("gg_tensor_5_10", [50]),
+        ("gg_tensor_5_10", [2, 25]),
+
+        ("gg_tensor_10_10", [10, 2, 5]),
+        ("gg_tensor_10_10", [50, 2]),
+
+        ("gg_tensor_50_100", [50,100]),
+        ("gg_tensor_50_100", [50,10, 10]),
     ]
 
 
-class TestTransposeOp:
-    @pytest.mark.parametrize("gg_tensor, dims, dim0, dim1", GG_TENSORS)
-    def test_transpose_op(self, gg_tensor, dims, dim0, dim1, request):
+class TestReshapeOp:
+    @pytest.mark.parametrize("gg_tensor, dims, ", GG_TENSORS)
+    def test_unary_op(self, gg_tensor, dims, request):
         gg_tensor = request.getfixturevalue(gg_tensor)
 
         torch_tensor = torch.tensor(gg_tensor.to_list(), dtype=torch.float64).view(dims)
-        torch_result = torch.transpose(torch_tensor, dim0, dim1)
+        torch_result = torch.reshape(torch_tensor, tuple(dims))
 
-        gg_result = gg_tensor.transpose(dim1, dim0)
+        gg_result = gg_tensor.reshape(dims)
         assert np.isclose(gg_result.to_list(), torch_result, rtol=1e-4).all()
 
-        gg_result = gg.transpose(gg_tensor, dim0, dim1)
+        gg_result = gg.reshape(gg_tensor, dims)
         assert np.isclose(gg_result.to_list(), torch_result, rtol=1e-4).all()
 
