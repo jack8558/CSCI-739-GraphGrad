@@ -12,6 +12,7 @@ namespace py = pybind11;
 #include "Tensor.h"
 #include "TransposeOp.h"
 #include "UnaryOp.h"
+#include "ReductionOp.h"
 #include "python_data_to_tensor.h"
 
 static py::object make_sublist(const std::vector<size_t>& dims, const std::vector<size_t>& strides, const scalar_t* data, size_t dim) {
@@ -96,4 +97,10 @@ PYBIND11_MODULE(graphgrad, m) {
     DEF_BINARY_WITH_OP("div", DIV, /, "truediv");
     DEF_BINARY("matmul", MATMUL);
     DEF_BINARY("pow", POW);
+
+#define DEF_REDUCTION(name, op_type) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t) { \
+    return std::shared_ptr<Tensor>(new ReductionOp(t, ReductionOpType::op_type));              \
+});
+DEF_REDUCTION("sum", SUM);
+
 }

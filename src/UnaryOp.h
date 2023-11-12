@@ -15,7 +15,7 @@ enum class UnaryOpType {
 class UnaryOp : public Tensor {
    public:
     UnaryOp(std::shared_ptr<Tensor> arg, UnaryOpType op_type)
-        : Tensor(verify_and_get_dims(*arg, op_type)), child(arg), op_type(op_type) {}
+        : Tensor(arg->dims), child(arg), op_type(op_type) {}
 
     const scalar_t* eval() override {
         if (!this->data) {
@@ -62,10 +62,6 @@ class UnaryOp : public Tensor {
     void backward_step() override;  // Implementation in Tensor_backward.cc
 
    protected:
-    static std::vector<size_t> verify_and_get_dims(const Tensor& tensor, UnaryOpType op_type) {
-        return tensor.dims;
-    }
-
     std::shared_ptr<Tensor> child;
     UnaryOpType op_type;
 };
@@ -82,7 +78,6 @@ IMPL_OP_FUNC(reciprocal, RECIP)
 IMPL_OP_FUNC(relu, RELU)
 IMPL_OP_FUNC(binilarize, BIN)
 IMPL_OP_FUNC(exp, EXP)
-
 
 #undef IMPL_OP_FUNC
 

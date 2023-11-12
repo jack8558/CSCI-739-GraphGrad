@@ -37,14 +37,10 @@ class ReshapeOp : public Tensor {
     }
 
     // TODO
-    void backward_step() override{
-
-    }  // Implementation in Tensor_backward.cc
+    void backward_step() override; // Implementation in Tensor_backward.cc
 
    protected:
     std::shared_ptr<Tensor> child;
-    size_t dim0;
-    size_t dim1;
 };
 
 // Functions:

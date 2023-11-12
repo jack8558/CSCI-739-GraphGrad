@@ -1,8 +1,14 @@
 #include <ranges>
 #include <unordered_set>
 
+#include <pybind11/pybind11.h>
+namespace py = pybind11;
+
 #include "BinaryOp.h"
+#include "ReductionOp.h"
+#include "ReshapeOp.h"
 #include "Tensor.h"
+#include "TransposeOp.h"
 #include "UnaryOp.h"
 
 // Collects all the nodes in the graph under the given root, in reverse topological order.
@@ -64,14 +70,13 @@ void UnaryOp::backward_step() {
             this->child->add_grad(-this->grad);
             break;
         case UnaryOpType::RECIP:
-            // this->child->add_grad(this->grad * -pow(this->child, -2));
-            throw std::runtime_error("UnaryOp::backward_step not implemented yet");
+            this->child->add_grad(this->grad * -pow(this->child, Tensor::from_scalar(-2.0)));
             break;
         case UnaryOpType::RELU:
             this->child->add_grad(this->grad * binilarize(this->child));
             break;
         case UnaryOpType::BIN:
-            this->child->add_grad(Tensor::from_scalar(0.0));
+            throw std::runtime_error("UnaryOp::backward_step cannot compute gradient for comparison binilarize()"); 
             break;
         case UnaryOpType::EXP:
             this->child->add_grad(this->grad * shared_from_this());
@@ -83,4 +88,23 @@ void UnaryOp::backward_step() {
 
 void BinaryOp::backward_step() {
     throw std::runtime_error("BinaryOp::backward_step not implemented yet");
+}
+
+void ReshapeOp::backward_step() {
+    throw std::runtime_error("ReshapeOp::backward_step not implemented yet");
+}
+
+void TransposeOp::backward_step() {
+    throw std::runtime_error("TransposeOp::backward_step not implemented yet");
+}
+
+void ReductionOp::backward_step() {
+    switch (this->op_type) {
+        case ReductionOpType::SUM:
+            this->child->add_grad(this->grad);
+            break;
+
+        default:
+            throw std::domain_error("bad op_type");
+    }
 }
