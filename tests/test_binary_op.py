@@ -29,6 +29,15 @@ def gg_scalar3():
     return gg.Tensor.rand([1, 1, 1])
 
 
+@pytest.fixture(scope="class")
+def gg_tensor_10_5():
+    return gg.Tensor.rand([10, 5])
+
+
+@pytest.fixture(scope="class")
+def gg_tensor_10_1():
+    return gg.Tensor.rand([10, 1])
+
 
 class TestBinaryOP:
     # The different pointwise/scalar binary ops to test.
@@ -38,20 +47,20 @@ class TestBinaryOP:
     BINARY_OPS = [
         # Addition
         (gg.add, torch.add),
+        (lambda gg_tensor, gg_tensor2: gg_tensor + gg_tensor2, torch.add),
         (lambda gg_tensor, gg_tensor2: gg_tensor.add(gg_tensor2), torch.add),
-
         # Subtraction
         (gg.subtract, torch.subtract),
+        (lambda gg_tensor, gg_tensor2: gg_tensor - gg_tensor2, torch.subtract),
         (lambda gg_tensor, gg_tensor2: gg_tensor.subtract(gg_tensor2), torch.subtract),
-
         # Multiplication
-        # (gg.mul, torch.mul),
-        # (lambda gg_tensor, gg_tensor2: gg_tensor.mul(gg_tensor2), torch.mul),
-
+        (gg.mul, torch.mul),
+        (lambda gg_tensor, gg_tensor2: gg_tensor * gg_tensor2, torch.mul),
+        (lambda gg_tensor, gg_tensor2: gg_tensor.mul(gg_tensor2), torch.mul),
         # Division
         (gg.div, torch.div),
+        (lambda gg_tensor, gg_tensor2: gg_tensor / gg_tensor2, torch.div),
         (lambda gg_tensor, gg_tensor2: gg_tensor.div(gg_tensor2), torch.div),
-
         # Power
         (gg.pow, torch.pow),
         (lambda gg_tensor, gg_tensor2: gg_tensor.pow(gg_tensor2), torch.pow),
@@ -62,17 +71,14 @@ class TestBinaryOP:
         ("gg_tensor_5_10", "gg_tensor_5_10"),
         ("gg_tensor_10_10", "gg_tensor_10_10"),
         ("gg_tensor_50_100", "gg_tensor_50_100"),
-
         # tensor, scalar
         ("gg_tensor_5_10", "gg_scalar1"),
         ("gg_tensor_10_10", "gg_scalar2"),
         ("gg_tensor_50_100", "gg_scalar3"),
-
         # scalar, tensor
         ("gg_scalar1", "gg_tensor_5_10"),
         ("gg_scalar2", "gg_tensor_10_10"),
         ("gg_scalar3", "gg_tensor_50_100"),
-
         # scalar, scalar
         ("gg_scalar1", "gg_scalar1"),
         ("gg_scalar2", "gg_scalar2"),
@@ -82,18 +88,21 @@ class TestBinaryOP:
     @pytest.mark.parametrize("gg_func, torch_func", BINARY_OPS)
     @pytest.mark.parametrize("gg_left, gg_right", BINARY_INPUTS)
     def test_binary_op(
-        self, 
+        self,
         gg_left,
         gg_right,
-        gg_func, 
+        gg_func,
         torch_func,
         request,
     ):
-        gg_left, gg_right =  request.getfixturevalue(gg_left), request.getfixturevalue(gg_right)
+        gg_left, gg_right = request.getfixturevalue(gg_left), request.getfixturevalue(
+            gg_right
+        )
         gg_result = gg_func(gg_left, gg_right)
         torch_left = torch.tensor(gg_left.to_list(), dtype=torch.float64)
         torch_right = torch.tensor(gg_right.to_list(), dtype=torch.float64)
         torch_result = torch_func(torch_left, torch_right)
+        print(gg_result, torch_result)
         assert np.isclose(gg_result.to_list(), torch_result, rtol=1e-4).all()
 
     @pytest.mark.parametrize("gg_op", [gg_op for gg_op, _ in BINARY_OPS])
@@ -106,21 +115,37 @@ class TestBinaryOP:
     MATMUL_INPUTS = [
         # 2D scalar, 2D scalar
         ("gg_scalar2", "gg_scalar2"),
-
         # 2D tensor, 2D tensor
-        ("gg_tensor_5_10", "gg_tensor_10_10")
+        ("gg_tensor_5_10", "gg_tensor_10_10"),
+        ("gg_tensor_5_10", "gg_tensor_10_5"),
+        ("gg_tensor_10_5", "gg_tensor_5_10"),
+        ("gg_tensor_5_10", "gg_tensor_10_1"),
+        ("gg_tensor_10_10", "gg_tensor_10_1"),
     ]
 
     @pytest.mark.parametrize("gg_left, gg_right", MATMUL_INPUTS)
     def test_matmul(self, gg_left, gg_right, request):
-        gg_left, gg_right = request.getfixturevalue(gg_left), request.getfixturevalue(gg_right)
+        gg_left, gg_right = request.getfixturevalue(gg_left), request.getfixturevalue(
+            gg_right
+        )
         torch_left = torch.tensor(gg_left.to_list(), dtype=torch.float64)
         torch_right = torch.tensor(gg_right.to_list(), dtype=torch.float64)
+        torch_result = torch.matmul(torch_left, torch_right)
+
         gg_result = gg.matmul(gg_left, gg_right)
-        # need to assert dims are correct
+
+        assert gg_result.dims() == list(torch_result.size())
         assert np.isclose(
             gg_result.to_list(),
-            torch.matmul(torch_left, torch_right),
+            torch_result,
+            rtol=1e-4,
+        ).all()
+
+        gg_result = gg_left.matmul(gg_right)
+        assert gg_result.dims() == list(torch_result.size())
+        assert np.isclose(
+            gg_result.to_list(),
+            torch_result,
             rtol=1e-4,
         ).all()
 

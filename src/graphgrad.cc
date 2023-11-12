@@ -8,10 +8,10 @@ namespace py = pybind11;
 #include <memory>
 
 #include "BinaryOp.h"
-#include "Tensor.h"
-#include "UnaryOp.h"
-#include "TransposeOp.h"
 #include "ReshapeOp.h"
+#include "Tensor.h"
+#include "TransposeOp.h"
+#include "UnaryOp.h"
 #include "python_data_to_tensor.h"
 
 static py::object make_sublist(const std::vector<size_t>& dims, const std::vector<size_t>& strides, const scalar_t* data, size_t dim) {
@@ -78,7 +78,7 @@ PYBIND11_MODULE(graphgrad, m) {
     DEF_TRANSPOSE("transpose");
 
 #define DEF_RESHAPE(name) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t, std::vector<size_t> new_dims) { \
-    return std::shared_ptr<Tensor>(new ReshapeOp(t, new_dims));                                                \
+    return std::shared_ptr<Tensor>(new ReshapeOp(t, new_dims));                                               \
 });
     DEF_RESHAPE("reshape");
 
@@ -93,7 +93,7 @@ PYBIND11_MODULE(graphgrad, m) {
     DEF_BINARY_WITH_OP("add", ADD, +, "add");
     DEF_BINARY_WITH_OP("subtract", SUB, -, "sub");
     DEF_BINARY_WITH_OP("mul", MUL, *, "mul");
-    DEF_BINARY_WITH_OP("div", DIV, /, "div");
+    DEF_BINARY_WITH_OP("div", DIV, /, "truediv");
     DEF_BINARY("matmul", MATMUL);
     DEF_BINARY("pow", POW);
 }

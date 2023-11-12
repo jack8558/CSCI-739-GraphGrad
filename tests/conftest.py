@@ -1,5 +1,4 @@
 import pytest
-import torch
 import sys
 import os
 
@@ -11,7 +10,6 @@ parent_dir = os.path.dirname(current_dir)
 sys.path.append(parent_dir)
 
 import graphgrad as gg
-import numpy as np
 
 
 @pytest.fixture(scope="session")
@@ -27,15 +25,3 @@ def gg_tensor_10_10():
 @pytest.fixture(scope="session")
 def gg_tensor_50_100():
     return gg.Tensor.rand([50, 100])
-
-@pytest.fixture(scope="session")
-def gg_tensor_50_50_50():
-    return gg.Tensor.rand([50, 50, 50])
-
-@pytest.fixture(scope="session")
-def gg_tensor_50_100_200():
-    return gg.Tensor.rand([50, 100, 200])
-
-@pytest.fixture(scope="session")
-def gg_tensor_100_20_200_30():
-    return gg.Tensor.rand([100, 20, 200, 30])

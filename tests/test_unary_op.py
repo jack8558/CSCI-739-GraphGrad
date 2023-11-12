@@ -47,7 +47,6 @@ class TestUnaryOp:
         "gg_tensor_50_100"
     ]
 
-
     @pytest.mark.parametrize("gg_func, torch_func", UNARY_OPS)
     @pytest.mark.parametrize("gg_tensor", GG_TENSORS)
     def test_unary_op(self, gg_tensor, gg_func, torch_func, request):
