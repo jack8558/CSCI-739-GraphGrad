@@ -90,41 +90,41 @@ void BinaryOp::backward_step() {
     switch (this->op_type) {
         case BinaryOpType::ADD:
             if (product(this->leftChild->dims) > 1) {
-                this->leftChild->grad = this->grad + Tensor::zeros(this->leftChild->dims);
+                this->leftChild->add_grad(this->grad + Tensor::zeros(this->leftChild->dims));
             } else {
-                this->leftChild->grad = sum(this->grad + Tensor::zeros(this->rightChild->dims));
+                this->leftChild->add_grad(sum(this->grad + Tensor::zeros(this->rightChild->dims)));
             }
 
             if (product(this->rightChild->dims) > 1) {
-                this->rightChild->grad = this->grad + Tensor::zeros(this->rightChild->dims);
+                this->rightChild->add_grad(this->grad + Tensor::zeros(this->rightChild->dims));
             } else {
-                this->rightChild->grad = sum(this->grad + Tensor::zeros(this->leftChild->dims));
+                this->rightChild->add_grad(sum(this->grad + Tensor::zeros(this->leftChild->dims)));
             }
             break;
         case BinaryOpType::SUB:
             if (product(this->leftChild->dims) > 1) {
-                this->leftChild->grad = this->grad + Tensor::zeros(this->leftChild->dims);
+                this->leftChild->add_grad(this->grad + Tensor::zeros(this->leftChild->dims));
             } else {
-                this->leftChild->grad = sum(this->grad + Tensor::zeros(this->rightChild->dims));
+                this->leftChild->add_grad(sum(this->grad + Tensor::zeros(this->rightChild->dims)));
             }
 
             if (product(this->rightChild->dims) > 1) {
-                this->rightChild->grad = -this->grad + Tensor::zeros(this->rightChild->dims);
+                this->rightChild->add_grad(-this->grad + Tensor::zeros(this->rightChild->dims));
             } else {
-                this->rightChild->grad = sum(-this->grad + Tensor::zeros(this->leftChild->dims));
+                this->rightChild->add_grad(sum(-this->grad + Tensor::zeros(this->leftChild->dims)));
             }
             break;
         case BinaryOpType::MUL:
             if (product(this->leftChild->dims) > 1) {
-                this->leftChild->grad = this->grad * this->rightChild;
+                this->leftChild->add_grad(this->grad * this->rightChild);
             } else {
-                this->leftChild->grad = sum(this->grad * this->rightChild);
+                this->leftChild->add_grad(sum(this->grad * this->rightChild));
             }
 
             if (product(this->rightChild->dims) > 1) {
-                this->rightChild->grad = this->grad * this->leftChild * Tensor::ones(this->rightChild->dims);
+                this->rightChild->add_grad(this->grad * this->leftChild * Tensor::ones(this->rightChild->dims));
             } else {
-                this->rightChild->grad = sum(this->grad * this->leftChild);
+                this->rightChild->add_grad(sum(this->grad * this->leftChild));
             }
             break;
         case BinaryOpType::MATMUL:
@@ -134,11 +134,20 @@ void BinaryOp::backward_step() {
             throw std::runtime_error("BinaryOp::backward_step not implemented yet");
             break;
         case BinaryOpType::DIV:
-            throw std::runtime_error("BinaryOp::backward_step not implemented yet");
+            if (product(this->leftChild->dims) > 1) {
+                this->leftChild->add_grad((this->grad * this->rightChild) * pow(this->rightChild, Tensor::from_scalar(-2.0)));
+            } else {
+                this->leftChild->add_grad(sum(this->grad * this->rightChild * pow(this->rightChild, Tensor::from_scalar(-2.0))));
+            }
+
+            if (product(this->rightChild->dims) > 1) {
+                this->rightChild->add_grad((-this->grad * this->leftChild * Tensor::ones(this->rightChild->dims)) * pow(this->rightChild, Tensor::from_scalar(-2.0)));
+            } else {
+                this->rightChild->add_grad(sum(-this->grad * this->leftChild * pow(this->rightChild, Tensor::from_scalar(-2.0))));
+            }
             break;
         default:
             throw std::domain_error("bad op_type");
-            ;
     }
 }
 
