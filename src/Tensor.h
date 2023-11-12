@@ -62,6 +62,34 @@ class Tensor : public std::enable_shared_from_this<Tensor> {
         return result;
     }
 
+    // Create a new tensor filled with ones.
+    static std::shared_ptr<Tensor> ones(std::vector<size_t> dims) {
+        // Allocate a new tensor with the given dims.
+        auto result = std::make_shared<Tensor>(dims);
+        auto& data = result->allocate_data();
+
+        // Fill the data with ones.
+        for (scalar_t& value : data) {
+            value = (scalar_t)1;
+        }
+
+        return result;
+    }
+
+    // Create a new tensor filled with zeros.
+    static std::shared_ptr<Tensor> zeros(std::vector<size_t> dims) {
+        // Allocate a new tensor with the given dims.
+        auto result = std::make_shared<Tensor>(dims);
+        auto& data = result->allocate_data();
+
+        // Fill the data with zeros.
+        for (scalar_t& value : data) {
+            value = (scalar_t)0;
+        }
+
+        return result;
+    }
+
     // Automatic differentiation:
 
     // For all descendant nodes `d` of this tensor, assigns the gradient of this tensor with respect

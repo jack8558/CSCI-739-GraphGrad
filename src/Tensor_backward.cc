@@ -1,7 +1,7 @@
+#include <pybind11/pybind11.h>
+
 #include <ranges>
 #include <unordered_set>
-
-#include <pybind11/pybind11.h>
 namespace py = pybind11;
 
 #include "BinaryOp.h"
@@ -67,7 +67,7 @@ void Tensor::add_grad(std::shared_ptr<Tensor> grad) {
 void UnaryOp::backward_step() {
     switch (this->op_type) {
         case UnaryOpType::NEG:
-            this->child->add_grad(-this->grad);
+            this->child->add_grad(-this->grad * Tensor::ones(this->child->dims));
             break;
         case UnaryOpType::RECIP:
             this->child->add_grad(this->grad * -pow(this->child, Tensor::from_scalar(-2.0)));
@@ -76,7 +76,7 @@ void UnaryOp::backward_step() {
             this->child->add_grad(this->grad * binilarize(this->child));
             break;
         case UnaryOpType::BIN:
-            throw std::runtime_error("UnaryOp::backward_step cannot compute gradient for comparison binilarize()"); 
+            throw std::runtime_error("UnaryOp::backward_step cannot compute gradient for comparison binilarize()");
             break;
         case UnaryOpType::EXP:
             this->child->add_grad(this->grad * shared_from_this());
@@ -87,7 +87,59 @@ void UnaryOp::backward_step() {
 }
 
 void BinaryOp::backward_step() {
-    throw std::runtime_error("BinaryOp::backward_step not implemented yet");
+    switch (this->op_type) {
+        case BinaryOpType::ADD:
+            if (product(this->leftChild->dims) > 1) {
+                this->leftChild->grad = this->grad + Tensor::zeros(this->leftChild->dims);
+            } else {
+                this->leftChild->grad = sum(this->grad + Tensor::zeros(this->rightChild->dims));
+            }
+
+            if (product(this->rightChild->dims) > 1) {
+                this->rightChild->grad = this->grad + Tensor::zeros(this->rightChild->dims);
+            } else {
+                this->rightChild->grad = sum(this->grad + Tensor::zeros(this->leftChild->dims));
+            }
+            break;
+        case BinaryOpType::SUB:
+            if (product(this->leftChild->dims) > 1) {
+                this->leftChild->grad = this->grad + Tensor::zeros(this->leftChild->dims);
+            } else {
+                this->leftChild->grad = sum(this->grad + Tensor::zeros(this->rightChild->dims));
+            }
+
+            if (product(this->rightChild->dims) > 1) {
+                this->rightChild->grad = -this->grad + Tensor::zeros(this->rightChild->dims);
+            } else {
+                this->rightChild->grad = sum(-this->grad + Tensor::zeros(this->leftChild->dims));
+            }
+            break;
+        case BinaryOpType::MUL:
+            if (product(this->leftChild->dims) > 1) {
+                this->leftChild->grad = this->grad * this->rightChild;
+            } else {
+                this->leftChild->grad = sum(this->grad * this->rightChild);
+            }
+
+            if (product(this->rightChild->dims) > 1) {
+                this->rightChild->grad = this->grad * this->leftChild * Tensor::ones(this->rightChild->dims);
+            } else {
+                this->rightChild->grad = sum(this->grad * this->leftChild);
+            }
+            break;
+        case BinaryOpType::MATMUL:
+            throw std::runtime_error("BinaryOp::backward_step not implemented yet");
+            break;
+        case BinaryOpType::POW:
+            throw std::runtime_error("BinaryOp::backward_step not implemented yet");
+            break;
+        case BinaryOpType::DIV:
+            throw std::runtime_error("BinaryOp::backward_step not implemented yet");
+            break;
+        default:
+            throw std::domain_error("bad op_type");
+            ;
+    }
 }
 
 void ReshapeOp::backward_step() {
@@ -101,7 +153,7 @@ void TransposeOp::backward_step() {
 void ReductionOp::backward_step() {
     switch (this->op_type) {
         case ReductionOpType::SUM:
-            this->child->add_grad(this->grad);
+            this->child->add_grad(sum(this->grad));
             break;
 
         default:

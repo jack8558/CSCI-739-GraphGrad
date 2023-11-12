@@ -23,16 +23,14 @@ class ReductionOp : public Tensor {
             auto& data = this->allocate_data();
 
             for (size_t i = 0; i < product(this->child->dims); i++) {
-                switch (this->op_type)
-                {
-                case ReductionOpType::SUM:
-                    data[0] += child_data[i];
-                    break;
-                
-                default:
-                    throw std::runtime_error("Reduction type not supported.");
+                switch (this->op_type) {
+                    case ReductionOpType::SUM:
+                        data[0] += child_data[i];
+                        break;
+
+                    default:
+                        throw std::runtime_error("Reduction type not supported.");
                 }
-                
             }
         }
 
@@ -52,3 +50,12 @@ class ReductionOp : public Tensor {
 };
 
 // Functions:
+
+#define IMPL_OP_FUNC(func_name, op_type)                                              \
+    inline static std::shared_ptr<Tensor> func_name(std::shared_ptr<Tensor> t) {      \
+        return std::shared_ptr<Tensor>(new ReductionOp(t, ReductionOpType::op_type)); \
+    }
+
+IMPL_OP_FUNC(sum, SUM)
+
+#undef IMPL_OP_FUNC

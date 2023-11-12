@@ -102,7 +102,6 @@ class TestBinaryOP:
         torch_left = torch.tensor(gg_left.to_list(), dtype=torch.float64)
         torch_right = torch.tensor(gg_right.to_list(), dtype=torch.float64)
         torch_result = torch_func(torch_left, torch_right)
-        print(gg_result, torch_result)
         assert np.isclose(gg_result.to_list(), torch_result, rtol=1e-4).all()
 
     @pytest.mark.parametrize("gg_op", [gg_op for gg_op, _ in BINARY_OPS])
@@ -111,6 +110,30 @@ class TestBinaryOP:
         tensor2 = gg.Tensor.rand([4, 3])
         with pytest.raises(ValueError):
             gg_op(tensor1, tensor2)
+
+    @pytest.mark.parametrize("gg_func, torch_func", BINARY_OPS)
+    @pytest.mark.parametrize("gg_left, gg_right", BINARY_INPUTS)
+    def test_binary_op_backward(
+        self,
+        gg_left,
+        gg_right,
+        gg_func,
+        torch_func,
+        request,
+    ):
+        gg_left = gg.Tensor(request.getfixturevalue(gg_left).to_list())
+        gg_right = gg.Tensor(request.getfixturevalue(gg_right).to_list())
+        gg_result = gg_func(gg_left, gg_right)
+        torch_left = torch.tensor(gg_left.to_list(), dtype=torch.float64, requires_grad=True)
+        torch_right = torch.tensor(gg_right.to_list(), dtype=torch.float64, requires_grad=True)
+        torch_result = torch_func(torch_left, torch_right)
+
+        gg_result.sum().backward()
+        torch_result.sum().backward()
+        print("left:", gg_left.grad, torch_left.grad)
+        print("right:", gg_right.grad, torch_right.grad)
+        assert np.isclose(gg_left.grad.to_list(), torch_left.grad, rtol=1e-4).all()
+        assert np.isclose(gg_right.grad.to_list(), torch_right.grad, rtol=1e-4).all()
 
     MATMUL_INPUTS = [
         # 2D scalar, 2D scalar
@@ -148,6 +171,21 @@ class TestBinaryOP:
             torch_result,
             rtol=1e-4,
         ).all()
+
+    @pytest.mark.parametrize("gg_left, gg_right", MATMUL_INPUTS)
+    def test_matmul_backward(self, gg_left, gg_right, request):
+        gg_left, gg_right = request.getfixturevalue(gg_left), request.getfixturevalue(
+            gg_right
+        )
+        gg_result = gg.matmul(gg_left, gg_right)
+        torch_left = torch.tensor(gg_left.to_list(), dtype=torch.float64, requires_grad=True)
+        torch_right = torch.tensor(gg_right.to_list(), dtype=torch.float64, requires_grad=True)
+        torch_result = torch.matmul(torch_left, torch_right)
+
+        gg_result.sum().backward()
+        torch_result.sum().backward()
+        assert np.isclose(gg_left.grad.to_list(), torch_left.grad, rtol=1e-4).all()
+        assert np.isclose(gg_right.grad.to_list(), torch_right.grad, rtol=1e-4).all()
 
     @pytest.mark.parametrize(
         "shape1, shape2",
