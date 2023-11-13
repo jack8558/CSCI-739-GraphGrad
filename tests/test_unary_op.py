@@ -39,6 +39,10 @@ class TestUnaryOp:
         # Exponential
         (gg.exp, torch.exp),
         (lambda gg_tensor: gg_tensor.exp(), torch.exp),
+
+        # Log
+        (gg.log, torch.log),
+        (lambda gg_tensor: gg_tensor.log(), torch.log),
     ]
 
     GG_TENSORS = [

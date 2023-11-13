@@ -2,6 +2,7 @@
 
 #include <ranges>
 #include <unordered_set>
+#include <cmath>
 namespace py = pybind11;
 
 #include "BinaryOp.h"
@@ -131,7 +132,19 @@ void BinaryOp::backward_step() {
             throw std::runtime_error("BinaryOp::backward_step not implemented yet");
             break;
         case BinaryOpType::POW:
-            throw std::runtime_error("BinaryOp::backward_step not implemented yet");
+            // x^n -> n*x^(n-1)
+            if (product(this->leftChild->dims) > 1){
+                this->leftChild->add_grad(this->grad * this->rightChild * pow(this->leftChild, (this->rightChild - Tensor::ones(this->rightChild->dims))));
+            } else {
+                this->leftChild->add_grad(sum(this->grad * this->rightChild * pow(this->leftChild, (this->rightChild - Tensor::ones(this->rightChild->dims)))));
+            }
+
+            // a^x -> ln(a) a^x
+            if (product(this->rightChild->dims) > 1){
+                this->rightChild->add_grad(this->grad * log(this->leftChild) * pow(this->leftChild, this->rightChild));
+            } else {
+                this->rightChild->add_grad(sum(this->grad * log(this->leftChild) * pow(this->leftChild, this->rightChild)));
+            }
             break;
         case BinaryOpType::DIV:
             if (product(this->leftChild->dims) > 1) {

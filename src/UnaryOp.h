@@ -1,6 +1,7 @@
 #pragma once
 
 #include <memory>
+#include <cmath>
 
 #include "Tensor.h"
 
@@ -10,6 +11,7 @@ enum class UnaryOpType {
     RELU,
     BIN,
     EXP,
+    LOG,
 };
 
 class UnaryOp : public Tensor {
@@ -42,6 +44,9 @@ class UnaryOp : public Tensor {
                     break;
                 case UnaryOpType::EXP:
                     scalar_func = [](scalar_t x) { return std::exp(x); };
+                    break;
+                case UnaryOpType::LOG:
+                    scalar_func = [](scalar_t x) { return std::log(x); };
                     break;
                 default:
                     throw std::domain_error("bad op_type");
@@ -78,6 +83,7 @@ IMPL_OP_FUNC(reciprocal, RECIP)
 IMPL_OP_FUNC(relu, RELU)
 IMPL_OP_FUNC(binilarize, BIN)
 IMPL_OP_FUNC(exp, EXP)
+IMPL_OP_FUNC(log, LOG)
 
 #undef IMPL_OP_FUNC
 

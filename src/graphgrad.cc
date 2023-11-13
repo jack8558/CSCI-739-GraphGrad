@@ -72,6 +72,7 @@ PYBIND11_MODULE(graphgrad, m) {
     DEF_UNARY("relu", RELU);
     DEF_UNARY("binilarize", BIN);
     DEF_UNARY("exp", EXP);
+    DEF_UNARY("log", LOG);
 
 #define DEF_TRANSPOSE(name) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t, int dim0, int dim1) { \
     return std::shared_ptr<Tensor>(new TransposeOp(t, dim0, dim1));                                   \
