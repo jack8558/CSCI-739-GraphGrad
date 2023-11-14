@@ -1,9 +1,8 @@
 #include <pybind11/pybind11.h>
-
-#include <ranges>
-#include <unordered_set>
-#include <cmath>
 namespace py = pybind11;
+
+#include <cmath>
+#include <unordered_set>
 
 #include "BinaryOp.h"
 #include "ReductionOp.h"
@@ -14,7 +13,7 @@ namespace py = pybind11;
 
 // Collects all the nodes in the graph under the given root, in reverse topological order.
 static void topo_sort_visit(Tensor* node, std::unordered_set<Tensor*>& visited_nodes, std::vector<Tensor*>& sorted_nodes) {
-    if (visited_nodes.contains(node)) {
+    if (visited_nodes.find(node) != visited_nodes.end()) {
         return;
     }
 
@@ -50,7 +49,8 @@ void Tensor::backward() {
 
     // Traverse the graph in topological order (starting with this (the root) node),
     // assigning/accumulating the gradients.
-    for (Tensor* t : std::views::reverse(sorted_nodes)) {
+    for (auto it = sorted_nodes.rbegin(); it != sorted_nodes.rend(); ++it) {
+        Tensor* t = *it;
         t->backward_step();
     }
 }

@@ -12,7 +12,7 @@ $(OUTPUT_FILE): $(INPUT_FILES)
 	g++ \
 		$(SOURCE_FILES) \
 		-o graphgrad$$(python3-config --extension-suffix) \
-		-Wall -std=c++20 \
+		-Wall -std=c++17 \
 		-fPIC -shared $$(python3 -m pybind11 --includes) \
 		-O3
 
