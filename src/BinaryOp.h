@@ -59,7 +59,7 @@ class BinaryOp : public Tensor {
                 switch (this->op_type) {
                     case BinaryOpType::MATMUL: {
                         size_t cols = this->rightChild->dims[1];
-                        size_t width = this->leftChild->dims[1];
+                        size_t width = this->rightChild->dims[0];
 
                         size_t r = i / cols;
                         size_t c = i % cols;
@@ -93,7 +93,7 @@ class BinaryOp : public Tensor {
     static std::vector<size_t> verify_and_get_dims(const Tensor& left, const Tensor& right, BinaryOpType op_type) {
         switch (op_type) {
             case BinaryOpType::MATMUL:
-                if (left.dims.size() != 2 || right.dims.size() != 2 || left.dims[1] != right.dims[0]) {
+                if ((left.dims.size() != 2 && left.dims.size() != 1) || right.dims.size() != 2 || left.dims[left.dims.size() - 1] != right.dims[0]) {
                     std::string error_message = "invalid matmul dims: left.dims=";
                     error_message += vector_to_string(left.dims);
                     error_message += ", right.dims=";

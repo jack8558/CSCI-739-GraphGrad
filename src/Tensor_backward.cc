@@ -129,7 +129,9 @@ void BinaryOp::backward_step() {
             }
             break;
         case BinaryOpType::MATMUL:
-            throw std::runtime_error("BinaryOp::backward_step not implemented yet");
+            // For matmul, it is eiter 1D * 2D or 2D * 2D
+            this->rightChild->add_grad(matmul(transpose(this->leftChild,0,1), this->grad * Tensor::ones(this->dims)));
+            this->leftChild->add_grad(matmul(this->grad * Tensor::ones(this->dims), transpose(this->rightChild,0,1)));
             break;
         case BinaryOpType::POW:
             // x^n -> n*x^(n-1)
@@ -165,11 +167,11 @@ void BinaryOp::backward_step() {
 }
 
 void ReshapeOp::backward_step() {
-    throw std::runtime_error("ReshapeOp::backward_step not implemented yet");
+    this->child->add_grad(this->grad * Tensor::ones(this->child->dims));
 }
 
 void TransposeOp::backward_step() {
-    throw std::runtime_error("TransposeOp::backward_step not implemented yet");
+    this->child->add_grad(this->grad * Tensor::ones(this->child->dims));
 }
 
 void ReductionOp::backward_step() {
