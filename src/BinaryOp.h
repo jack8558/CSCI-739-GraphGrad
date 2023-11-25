@@ -55,6 +55,7 @@ class BinaryOp : public Tensor {
             }
 
             // Fill the buffer with computed values.
+            #pragma omp parallel for
             for (size_t i = 0; i < data.size(); i++) {
                 switch (this->op_type) {
                     case BinaryOpType::MATMUL: {

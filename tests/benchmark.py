@@ -143,9 +143,9 @@ def test3(epochs):
         tensor_y = tensor_y.subtract(grad_tensor_y.mul(gg_lr))
         tensor_z = tensor_z.subtract(grad_tensor_z.mul(gg_lr))
 
-    gg_result = out
+    gg_res = out
     print("GraphGrad result:")
-    print(gg_result)
+    print(gg_res)
     print()
 
     end = time.time()
@@ -172,15 +172,17 @@ def test3(epochs):
         tensor_y = tensor_y.subtract(grad_tensor_y.mul(learning_rate))
         tensor_z = tensor_z.subtract(grad_tensor_z.mul(learning_rate))
 
-    torch_result = out
+    torch_res = out
     print("Torch result:")
-    print(torch_result)
+    print(torch_res)
     print()
 
     end = time.time()
     torch_time = end - start
 
-    return gg_result, gg_time, torch_result, torch_time
+    assert np.isclose(gg_res.to_list(), torch_res, rtol=1e-4).all()
+
+    return gg_res, gg_time, torch_res, torch_time
     
     
 
@@ -200,5 +202,11 @@ if __name__ == "__main__":
     print("Starting test 3...")
     _, gg_time, _, torch_time = test3(10)
     print(f"Test 3 finished.\n\tGraphGrad time: {gg_time}\n\tTorch time: {torch_time}")
+
+    print("\n=========================\n")
+
+    print("Starting test 4...")
+    _, gg_time, _, torch_time = test3(100)
+    print(f"Test 4 finished.\n\tGraphGrad time: {gg_time}\n\tTorch time: {torch_time}")
 
     print("\n=========================\n")

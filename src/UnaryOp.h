@@ -52,6 +52,7 @@ class UnaryOp : public Tensor {
                     throw std::domain_error("bad op_type");
             }
 
+            #pragma omp parallel for
             for (size_t i = 0; i < data.size(); i++) {
                 data[i] = scalar_func(child_data[i]);
             }

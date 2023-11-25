@@ -24,6 +24,7 @@ class ReshapeOp : public Tensor {
             // Allocate the data buffer.
             auto& data = this->allocate_data();
 
+            #pragma omp parallel for
             for (size_t i = 0; i < data.size(); i++) {
                 data[i] = child_data[i];
             }

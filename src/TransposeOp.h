@@ -35,6 +35,7 @@ class TransposeOp : public Tensor {
             }
 
             // Transpose the data
+            #pragma omp parallel for
             for (size_t i = 0; i < data.size(); ++i) {
                 if (this->dim0 == this->dim1)
                     data[i] = child_data[i];
