@@ -130,8 +130,21 @@ void BinaryOp::backward_step() {
             break;
         case BinaryOpType::MATMUL:
             // For matmul, it is eiter 1D * 2D or 2D * 2D
-            this->rightChild->add_grad(matmul(transpose(this->leftChild,0,1), this->grad * Tensor::ones(this->dims)));
-            this->leftChild->add_grad(matmul(this->grad * Tensor::ones(this->dims), transpose(this->rightChild,0,1)));
+            if (this->leftChild->dims.size() == 1) {
+                this->rightChild->add_grad(matmul(transpose(this->leftChild,0,0), this->grad * Tensor::ones(this->dims)));
+            } else {
+                if (product(this->rightChild->dims) > 1)
+                    this->rightChild->add_grad(matmul(transpose(this->leftChild,0,1), this->grad * Tensor::ones(this->dims)));
+                else
+                    this->rightChild->add_grad(sum(this->grad * this->leftChild));
+            }
+
+            if (this->rightChild->dims.size() == 1) {
+                this->leftChild->add_grad(matmul(this->grad * Tensor::ones(this->dims), transpose(this->rightChild,0,0)));
+            }
+            else {
+                this->leftChild->add_grad(matmul(this->grad * Tensor::ones(this->dims), transpose(this->rightChild,0,1)));
+            }
             break;
         case BinaryOpType::POW:
             // x^n -> n*x^(n-1)

@@ -20,17 +20,26 @@ class TransposeOp : public Tensor {
         if (!this->data) {
             // Evaluate the child node and get its data.
             const scalar_t* child_data = this->child->eval();
+            // if (this->dim0 == this->dim1)
+            //     return child_data;
 
             // Allocate the data buffer.
             auto& data = this->allocate_data();
 
             // Computer strides
-            std::vector<size_t> strides = get_transposed_strides();
-            std::vector<size_t> original_strides = get_original_strides();
+            std::vector<size_t> strides;
+            std::vector<size_t> original_strides;
+            if (this->dim0 != this->dim1) {
+                strides = get_transposed_strides();
+                original_strides = get_original_strides();
+            }
 
             // Transpose the data
             for (size_t i = 0; i < data.size(); ++i) {
-                data[i] = child_data[find_original_index(strides, original_strides, i)];
+                if (this->dim0 == this->dim1)
+                    data[i] = child_data[i];
+                else
+                    data[i] = child_data[find_original_index(strides, original_strides, i)];
             }
         }
 
@@ -41,7 +50,6 @@ class TransposeOp : public Tensor {
         return {this->child.get()};
     }
 
-    // TODO
     void backward_step() override;  // Implementation in Tensor_backward.cc
 
    protected:

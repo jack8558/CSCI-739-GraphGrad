@@ -38,6 +38,10 @@ def gg_tensor_10_5():
 def gg_tensor_10_1():
     return gg.Tensor.rand([10, 1])
 
+@pytest.fixture(scope="class")
+def gg_tensor_1_10():
+    return gg.Tensor.rand([1, 10])
+
 
 class TestBinaryOP:
     # The different pointwise/scalar binary ops to test.
@@ -134,8 +138,23 @@ class TestBinaryOP:
         assert np.isclose(gg_right.grad.to_list(), torch_right.grad, rtol=1e-4).all()
 
     MATMUL_INPUTS = [
+        # 1D scalar, 1D scalar
+        ("gg_scalar1", "gg_scalar1"),
+
+        # 1D scalar, 2D scalar
+        ("gg_scalar1", "gg_scalar2"),
+
+        # 2D scalar, 1D scalar
+        ("gg_scalar2", "gg_scalar1"),
+
         # 2D scalar, 2D scalar
         ("gg_scalar2", "gg_scalar2"),
+
+        # 1D scalar, 1D tensor
+        ("gg_scalar1", "gg_tensor_1_10"),
+
+        # 2D tensor, 1D scalar
+        ("gg_tensor_10_1", "gg_scalar1"),
 
         # 2D tensor, 2D tensor
         ("gg_tensor_5_10", "gg_tensor_10_10"),
@@ -182,7 +201,10 @@ class TestBinaryOP:
 
         gg_result.sum().backward()
         torch_result.sum().backward()
-
+        print("gg_left", gg_left.grad)
+        print("gg_right", gg_right.grad)
+        print("gg_left_tensor", torch_left.grad)
+        print("gg_right_tensor", torch_right.grad)
         assert np.isclose(gg_left.grad.to_list(), torch_left.grad, rtol=1e-4).all()
         assert np.isclose(gg_right.grad.to_list(), torch_right.grad, rtol=1e-4).all()
 
@@ -190,9 +212,9 @@ class TestBinaryOP:
         "shape1, shape2",
         [
             # non-2D inputs
-            ([6], [6]),
+            # ([6], [6]),
             # ([3], [3, 4]),
-            ([3, 4], [4]),
+            # ([3, 4], [4]),
             # middle dimension doesn't match
             ([3, 4], [3, 4]),
             ([10, 32], [10, 64]),
