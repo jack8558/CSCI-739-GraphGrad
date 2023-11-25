@@ -22,16 +22,21 @@ class ReductionOp : public Tensor {
             // Allocate the data buffer.
             auto& data = this->allocate_data();
 
+            double tmp = data[0];
+
+            #pragma omp parallel for reduction(+:tmp)
             for (size_t i = 0; i < product(this->child->dims); i++) {
                 switch (this->op_type) {
                     case ReductionOpType::SUM:
-                        data[0] += child_data[i];
+                        // data[0] += child_data[i];
+                        tmp += child_data[i];
                         break;
 
                     default:
                         throw std::runtime_error("Reduction type not supported.");
                 }
             }
+            data[0] = tmp;
         }
 
         return data->data();
