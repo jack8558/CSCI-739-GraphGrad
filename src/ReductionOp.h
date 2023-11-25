@@ -22,7 +22,6 @@ class ReductionOp : public Tensor {
             // Allocate the data buffer.
             auto& data = this->allocate_data();
 
-            #pragma omp parallel for
             for (size_t i = 0; i < product(this->child->dims); i++) {
                 switch (this->op_type) {
                     case ReductionOpType::SUM:
