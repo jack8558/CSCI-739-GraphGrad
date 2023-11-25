@@ -30,7 +30,7 @@ def test1():
     z = get_data(7, 1, 0.5)
 
     # Graph Grad
-    start = time.time()
+    start = time.perf_counter()
 
     tensor_x = gg.Tensor(x.tolist())
     tensor_y = gg.Tensor(y.tolist())
@@ -42,11 +42,11 @@ def test1():
     print(gg_res)
     print()
 
-    end = time.time()
+    end = time.perf_counter()
     gg_time = end - start
 
     # Torch
-    start = time.time()
+    start = time.perf_counter()
 
     tensor_x = torch.tensor(x)
     tensor_y = torch.tensor(y)
@@ -58,7 +58,7 @@ def test1():
     print(torch_res)
     print()
 
-    end = time.time()
+    end = time.perf_counter()
     torch_time = end - start
 
     assert np.isclose(gg_res.to_list(), torch_res, rtol=1e-4).all()
@@ -72,7 +72,7 @@ def test2():
     z = get_data(1000, 1, 1.0)
 
     # Graph Grad
-    start = time.time()
+    start = time.perf_counter()
 
     tensor_x = gg.Tensor(x.tolist())
     tensor_y = gg.Tensor(y.tolist())
@@ -84,11 +84,11 @@ def test2():
     print(gg_res)
     print()
 
-    end = time.time()
+    end = time.perf_counter()
     gg_time = end - start
 
     # Torch
-    start = time.time()
+    start = time.perf_counter()
 
     tensor_x = torch.tensor(x)
     tensor_y = torch.tensor(y)
@@ -100,7 +100,7 @@ def test2():
     print(torch_res)
     print()
 
-    end = time.time()
+    end = time.perf_counter()
     torch_time = end - start
 
     assert np.isclose(gg_res.to_list(), torch_res, rtol=1e-4).all()
@@ -120,7 +120,7 @@ def test3(epochs):
     label = np.random.uniform(size=[1000])
 
     # Graph Grad
-    start = time.time()
+    start = time.perf_counter()
 
     tensor_x = gg.Tensor(x.tolist())
     tensor_y = gg.Tensor(y.tolist())
@@ -147,11 +147,11 @@ def test3(epochs):
     print(gg_res)
     print()
 
-    end = time.time()
+    end = time.perf_counter()
     gg_time = end - start
 
     # Torch
-    start = time.time()
+    start = time.perf_counter()
 
     tensor_x = torch.tensor(x)
     tensor_y = torch.tensor(y)
@@ -176,7 +176,7 @@ def test3(epochs):
     print(torch_res)
     print()
 
-    end = time.time()
+    end = time.perf_counter()
     torch_time = end - start
 
     assert np.isclose(gg_res.to_list(), torch_res, rtol=1e-4).all()
