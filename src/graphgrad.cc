@@ -8,11 +8,11 @@ namespace py = pybind11;
 #include <memory>
 
 #include "BinaryOp.h"
+#include "ReductionOp.h"
 #include "ReshapeOp.h"
 #include "Tensor.h"
 #include "TransposeOp.h"
 #include "UnaryOp.h"
-#include "ReductionOp.h"
 #include "python_data_to_tensor.h"
 
 static py::object make_sublist(const std::vector<size_t>& dims, const std::vector<size_t>& strides, const scalar_t* data, size_t dim) {
@@ -45,6 +45,7 @@ static py::object to_list(Tensor& t) {
 PYBIND11_MODULE(graphgrad, m) {
     auto tensor_class = py::class_<Tensor, std::shared_ptr<Tensor>>(m, "Tensor");
     tensor_class
+        .def(py::init(&numpy_array_to_tensor))
         .def(py::init(&python_data_to_tensor))
         .def_static("rand", &Tensor::rand)
         .def("dims", [](const Tensor& t) { return t.dims; })
@@ -100,8 +101,7 @@ PYBIND11_MODULE(graphgrad, m) {
     DEF_BINARY("pow", POW);
 
 #define DEF_REDUCTION(name, op_type) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t) { \
-    return std::shared_ptr<Tensor>(new ReductionOp(t, ReductionOpType::op_type));              \
+    return std::shared_ptr<Tensor>(new ReductionOp(t, ReductionOpType::op_type));          \
 });
-DEF_REDUCTION("sum", SUM);
-
+    DEF_REDUCTION("sum", SUM);
 }

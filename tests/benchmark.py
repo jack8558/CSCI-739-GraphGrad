@@ -32,9 +32,9 @@ def test1():
     # Graph Grad
     start = time.perf_counter()
 
-    tensor_x = gg.Tensor(x.tolist())
-    tensor_y = gg.Tensor(y.tolist())
-    tensor_z = gg.Tensor(z.tolist())
+    tensor_x = gg.Tensor(x)
+    tensor_y = gg.Tensor(y)
+    tensor_z = gg.Tensor(z)
 
     gg_res = tensor_x.matmul(tensor_y).relu().matmul(tensor_z)
 
@@ -74,9 +74,9 @@ def test2():
     # Graph Grad
     start = time.perf_counter()
 
-    tensor_x = gg.Tensor(x.tolist())
-    tensor_y = gg.Tensor(y.tolist())
-    tensor_z = gg.Tensor(z.tolist())
+    tensor_x = gg.Tensor(x)
+    tensor_y = gg.Tensor(y)
+    tensor_z = gg.Tensor(z)
 
     gg_res = tensor_x.matmul(tensor_y).relu().matmul(tensor_z)
 
@@ -122,10 +122,10 @@ def test3(epochs):
     # Graph Grad
     start = time.perf_counter()
 
-    tensor_x = gg.Tensor(x.tolist())
-    tensor_y = gg.Tensor(y.tolist())
-    tensor_z = gg.Tensor(z.tolist())
-    tensor_label = gg.Tensor(label.tolist())
+    tensor_x = gg.Tensor(x)
+    tensor_y = gg.Tensor(y)
+    tensor_z = gg.Tensor(z)
+    tensor_label = gg.Tensor(label)
     gg_lr = gg.Tensor([learning_rate])
     gg_const = gg.Tensor([1.0 / N])
 
