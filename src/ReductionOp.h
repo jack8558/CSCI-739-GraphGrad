@@ -12,15 +12,37 @@ enum class ReductionOpType {
 class ReductionOp : public Tensor {
    public:
     ReductionOp(std::shared_ptr<Tensor> arg, ReductionOpType op_type)
-        : Tensor(std::vector<size_t>{1}), child(arg), op_type(op_type) {}
+        : Tensor(std::vector<size_t>{1}), child(arg), op_type(op_type) {
+            this->hashValue = tensor_hash();
+        }
+
+    // Equality operator for Tensor
+    bool operator==(const ReductionOp& other) const {
+        return this->dims == other.dims && this->op_type == other.op_type && this->child == other.child;
+    }
+
+    size_t tensor_hash(){
+        size_t hashValue = 0;
+        Tensor::hash_combine(hashValue, Tensor::vector_hash(this->dims));
+        Tensor::hash_combine(hashValue, std::hash<std::string>{}("reduction"));
+        Tensor::hash_combine(hashValue, this->child->hashValue);
+        return hashValue;
+    }
 
     const scalar_t* eval() override {
         if (!this->data) {
-            // Evaluate the child node and get its data.
-            const scalar_t* child_data = this->child->eval();
-
             // Allocate the data buffer.
             auto& data = this->allocate_data();
+
+            auto result = Tensor::lruMap.get(this->hashValue);
+            if (result.has_value()) {
+                // The key was found, and you can access the value using result.value()
+                data = result.value();
+                return data.data();
+            }
+
+            // Evaluate the child node and get its data.
+            const scalar_t* child_data = this->child->eval();
 
             double tmp = data[0];
 
@@ -37,6 +59,9 @@ class ReductionOp : public Tensor {
                 }
             }
             data[0] = tmp;
+
+            // Add it to hashmap
+            Tensor::lruMap.insert(this->hashValue, data);
         }
 
         return data->data();

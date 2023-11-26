@@ -14,6 +14,8 @@ namespace py = pybind11;
 #include "UnaryOp.h"
 #include "ReductionOp.h"
 #include "python_data_to_tensor.h"
+#include "LRUMap.h"
+
 
 static py::object make_sublist(const std::vector<size_t>& dims, const std::vector<size_t>& strides, const scalar_t* data, size_t dim) {
     if (dim == dims.size()) {
@@ -50,6 +52,7 @@ PYBIND11_MODULE(graphgrad, m) {
         .def("dims", [](const Tensor& t) { return t.dims; })
         .def("backward", &Tensor::backward)
         .def_readwrite("grad", &Tensor::grad)
+        .def_readwrite_static("lruMap", &Tensor::lruMap)
         .def("to_list", to_list)
         .def("__repr__", [](Tensor& t) {
             t.eval();

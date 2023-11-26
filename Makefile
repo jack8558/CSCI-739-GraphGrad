@@ -1,6 +1,6 @@
 # Define the source files and output file.
 SOURCE_FILES := src/graphgrad.cc src/Tensor_backward.cc
-HEADER_FILES := src/Tensor.h src/utils.h src/UnaryOp.h src/BinaryOp.h src/TransposeOp.h src/ReshapeOp.h src/python_data_to_tensor.h
+HEADER_FILES := src/Tensor.h src/utils.h src/UnaryOp.h src/BinaryOp.h src/TransposeOp.h src/ReshapeOp.h src/python_data_to_tensor.h src/LRUMap.h
 INPUT_FILES := $(SOURCE_FILES) $(HEADER_FILES)
 OUTPUT_FILE := graphgrad$(shell python3-config --extension-suffix)
 

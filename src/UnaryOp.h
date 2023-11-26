@@ -17,15 +17,37 @@ enum class UnaryOpType {
 class UnaryOp : public Tensor {
    public:
     UnaryOp(std::shared_ptr<Tensor> arg, UnaryOpType op_type)
-        : Tensor(arg->dims), child(arg), op_type(op_type) {}
+        : Tensor(arg->dims), child(arg), op_type(op_type) {
+            this->hashValue = tensor_hash();
+        }
+
+    // Equality operator for Tensor
+    bool operator==(const UnaryOp& other) const {
+        return this->dims == other.dims && this->op_type == other.op_type && this->child == other.child;
+    }
+
+    size_t tensor_hash(){
+        size_t hashValue = 0;
+        Tensor::hash_combine(hashValue, Tensor::vector_hash(this->dims));
+        Tensor::hash_combine(hashValue, static_cast<size_t>(this->op_type));
+        Tensor::hash_combine(hashValue, this->child->hashValue);
+        return hashValue;
+    }
 
     const scalar_t* eval() override {
         if (!this->data) {
-            // Evaluate the child node and get its data.
-            const scalar_t* child_data = this->child->eval();
-
             // Allocate the data buffer.
             auto& data = this->allocate_data();
+
+            auto result = Tensor::lruMap.get(this->hashValue);
+            if (result.has_value()) {
+                // The key was found, and you can access the value using result.value()
+                data = result.value();
+                return data.data();
+            }
+
+            // Evaluate the child node and get its data.
+            const scalar_t* child_data = this->child->eval();
 
             // Get a function to compute each value.
             scalar_t (*scalar_func)(scalar_t);
@@ -56,6 +78,9 @@ class UnaryOp : public Tensor {
             for (size_t i = 0; i < data.size(); i++) {
                 data[i] = scalar_func(child_data[i]);
             }
+            
+            // // Add it to hashmap
+            Tensor::lruMap.insert(this->hashValue, data);
         }
 
         return data->data();

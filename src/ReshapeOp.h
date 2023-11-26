@@ -14,20 +14,47 @@ class ReshapeOp : public Tensor {
             if (product(arg->dims) != product(new_dims)) {
                 throw std::invalid_argument("Mismatched dims in reshape");
             }
+            this->hashValue = tensor_hash();
         }
+
+    // Equality operator for Tensor
+    bool operator==(const ReshapeOp& other) const {
+        return this->dims == other.dims && this->child == other.child;
+    }
+
+    size_t tensor_hash(){
+        size_t hashValue = 0;
+        Tensor::hash_combine(hashValue, Tensor::vector_hash(this->dims));
+        Tensor::hash_combine(hashValue, std::hash<std::string>{}("reshape"));
+        Tensor::hash_combine(hashValue, this->child->hashValue);
+        return hashValue;
+    }
 
     const scalar_t* eval() override {
         if (!this->data) {
-            // Evaluate the child node and get its data.
-            const scalar_t* child_data = this->child->eval();
 
             // Allocate the data buffer.
             auto& data = this->allocate_data();
+
+            auto result = Tensor::lruMap.get(this->hashValue);
+            if (result.has_value()) {
+                // The key was found, and you can access the value using result.value()
+                data = result.value();
+                return data.data();
+            }
+            
+            // Evaluate the child node and get its data.
+            const scalar_t* child_data = this->child->eval();
+
 
             #pragma omp parallel for
             for (size_t i = 0; i < data.size(); i++) {
                 data[i] = child_data[i];
             }
+
+            // Add it to hashmap
+            Tensor::lruMap.insert(this->hashValue, data);
+
         }
 
         return data->data();

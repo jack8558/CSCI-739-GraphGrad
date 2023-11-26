@@ -20,16 +20,39 @@ enum class BinaryOpType {
 class BinaryOp : public Tensor {
    public:
     BinaryOp(std::shared_ptr<Tensor> arg1, std::shared_ptr<Tensor> arg2, BinaryOpType op_type)
-        : Tensor(verify_and_get_dims(*arg1, *arg2, op_type)), leftChild(arg1), rightChild(arg2), op_type(op_type) {}
+        : Tensor(verify_and_get_dims(*arg1, *arg2, op_type)), leftChild(arg1), rightChild(arg2), op_type(op_type) {
+            this->hashValue = tensor_hash();
+        }
+
+    // Equality operator for Tensor
+    bool operator==(const BinaryOp& other) const {
+        return this->dims == other.dims && this->op_type == other.op_type &&this->leftChild == other.leftChild && this->rightChild == other.rightChild;
+    }
+
+    size_t tensor_hash(){
+        size_t hashValue = 0;
+        Tensor::hash_combine(hashValue, Tensor::vector_hash(this->dims));
+        Tensor::hash_combine(hashValue, static_cast<size_t>(this->op_type));
+        Tensor::hash_combine(hashValue, this->leftChild->hashValue);
+        Tensor::hash_combine(hashValue, this->rightChild->hashValue);
+        return hashValue;
+    }
 
     const scalar_t* eval() override {
         if (!this->data) {
-            // Evaluate the child node and get its data.
-            const scalar_t* left_child_data = this->leftChild->eval();
-            const scalar_t* right_child_data = this->rightChild->eval();
 
             // Allocate the data buffer.
             auto& data = this->allocate_data();
+
+            auto result = Tensor::lruMap.get(this->hashValue);
+            if (result.has_value()) {
+                data = result.value();
+                return data.data();
+            }
+
+            // Evaluate the child node and get its data.
+            const scalar_t* left_child_data = this->leftChild->eval();
+            const scalar_t* right_child_data = this->rightChild->eval();
 
             // Get a function to compute each value.
             scalar_t (*scalar_func)(scalar_t, scalar_t);
@@ -86,6 +109,9 @@ class BinaryOp : public Tensor {
                         }
                 }
             }
+
+            // Add it to hashmap
+            Tensor::lruMap.insert(this->hashValue, data);
         }
 
         return data->data();

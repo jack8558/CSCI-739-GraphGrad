@@ -8,8 +8,10 @@
 #include <stdexcept>
 #include <string>
 #include <vector>
+#include <unordered_map>
 
 #include "utils.h"
+#include "LRUMap.h"
 
 using scalar_t = double;
 
@@ -17,11 +19,14 @@ class Tensor : public std::enable_shared_from_this<Tensor> {
    public:
     // Construct a Tensor without any data buffer.
     // This should only be called by subclasses.
-    explicit Tensor(std::vector<size_t> dims) : dims(std::move(dims)) {}
+    explicit Tensor(std::vector<size_t> dims) : dims(std::move(dims)) {
+        this->hashValue = tensor_hash();
+    }
 
     // Construct a Tensor with the given data buffer.
     explicit Tensor(std::vector<size_t> dims, std::vector<scalar_t> data) : dims(std::move(dims)), data(std::move(data)) {
         assert(product(this->dims) == this->data->size());
+        this->hashValue = tensor_hash();
     }
 
     // Delete the copy constructor and copy assignment operator so Tensors won't
@@ -37,6 +42,11 @@ class Tensor : public std::enable_shared_from_this<Tensor> {
 
     // Destructor.
     virtual ~Tensor() {}
+
+    // Equality operator for Tensor
+    bool operator==(const Tensor& other) const {
+        return this->dims == other.dims && this->data.value() == other.data.value();
+    }
 
     // Factory functions:
 
@@ -113,6 +123,38 @@ class Tensor : public std::enable_shared_from_this<Tensor> {
 
     // Other methods:
 
+    // Helper function to combine hash values
+    // Used to combine hashvalue and object
+    template <typename T>
+    static void hash_combine(size_t& seed, const T& val) {
+        seed ^= std::hash<T>{}(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+
+    // Used to combine two hashvalue
+    static void hash_combine(size_t& seed, size_t val) {
+        seed ^= val + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+    }
+
+    // Compute hash of vector
+    template <typename T>
+    size_t vector_hash(const std::vector<T>& v) {
+        size_t hashValue = 0;
+        for (const auto& element : v) {
+            hash_combine(hashValue, std::hash<T>{}(element));
+        }
+        return hashValue;
+    }
+
+    // Compute hash for Tensor class
+    size_t tensor_hash(){
+        size_t hashValue = 0;
+        hash_combine(hashValue, vector_hash(this->dims));
+        if (this->data){
+            hash_combine(hashValue, vector_hash(this->data.value()));
+        }
+        return hashValue;
+    }
+
     // Evalutates this tensor node (if it has not yet been evaluated), then returns the pointer to
     // the resulting data buffer.
     virtual const scalar_t* eval() {
@@ -135,6 +177,7 @@ class Tensor : public std::enable_shared_from_this<Tensor> {
         return result;
     }
 
+
     // The Tensor's dimensions.
     std::vector<size_t> dims;
 
@@ -142,7 +185,13 @@ class Tensor : public std::enable_shared_from_this<Tensor> {
     // May be null if this Tensor has no gradient assigned.
     std::shared_ptr<Tensor> grad = nullptr;
 
-   protected:
+    // Static hashmap for common subextpression. Removes least used element if exceeds capacity.
+    inline static LRUMap<size_t, std::vector<double>> lruMap{1000};
+
+    // hashValue of tensor
+    size_t hashValue;
+
+    protected:
     // Allocate the data buffer for this tensor and return a reference to it.
     // The buffer size is equal to the product of dims.
     // Throws an exception if this tensor already has data allocated.
