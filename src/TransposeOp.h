@@ -26,21 +26,35 @@ class TransposeOp : public Tensor {
             // Allocate the data buffer.
             auto& data = this->allocate_data();
 
-            // Computer strides
-            std::vector<size_t> strides;
-            std::vector<size_t> original_strides;
-            if (this->dim0 != this->dim1) {
-                strides = get_transposed_strides();
-                original_strides = get_original_strides();
-            }
+            // Transpose the data.
+            if (dims.size() == 2 && dim0 == 0 && dim1 == 1) {
+                // Special-case 2D matrix transpose for speed.
+                size_t rows = dims[0];
+                size_t cols = dims[1];
 
-            // Transpose the data
-            #pragma omp parallel for
-            for (size_t i = 0; i < data.size(); ++i) {
-                if (this->dim0 == this->dim1)
-                    data[i] = child_data[i];
-                else
-                    data[i] = child_data[find_original_index(strides, original_strides, i)];
+                #pragma omp parallel for
+                for (size_t i = 0; i < cols; i++) {
+                    for (size_t j = 0; j < rows; j++) {
+                        data[j * cols + i] = child_data[i * rows + j];
+                    }
+                }
+            } else {
+                // Compute strides.
+                std::vector<size_t> strides;
+                std::vector<size_t> original_strides;
+                if (this->dim0 != this->dim1) {
+                    strides = get_transposed_strides();
+                    original_strides = get_original_strides();
+                }
+
+                #pragma omp parallel for
+                for (size_t i = 0; i < data.size(); ++i) {
+                    if (this->dim0 == this->dim1) {
+                        data[i] = child_data[i];
+                    } else {
+                        data[i] = child_data[find_original_index(strides, original_strides, i)];
+                    }
+                }
             }
         }
 
@@ -103,7 +117,7 @@ class TransposeOp : public Tensor {
         return strides;
     }
 
-    size_t find_original_index(std::vector<size_t> strides, std::vector<size_t> original_strides, size_t index) {
+    size_t find_original_index(const std::vector<size_t>& strides, const std::vector<size_t>& original_strides, size_t index) {
         size_t original_index = 0;
         if (dim0 == dims.size() - 1) {
             original_index += (index / strides[dim1] % dims[dim1]);
