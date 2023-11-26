@@ -1,5 +1,6 @@
 #pragma once
 
+#include <pybind11/numpy.h>
 #include <pybind11/pybind11.h>
 #include <pybind11/stl.h>
 namespace py = pybind11;
@@ -97,7 +98,22 @@ void _convert_data_helper(py::object py_data, size_t depth, std::vector<size_t>&
     }
 }
 
-// Creates a Tensor from a (nested) Python list of data values.
+// Creates a Tensor from a NumPy array.
+// Special-cased for efficiency.
+Tensor numpy_array_to_tensor(py::array_t<scalar_t, py::array::c_style | py::array::forcecast> array) {
+    std::vector<size_t> dims(array.ndim());
+    for (size_t i = 0; i < dims.size(); i++) {
+        dims[i] = array.shape(i);
+    }
+
+    std::vector<scalar_t> data(array.size());
+    std::copy_n(array.data(), array.size(), data.begin());
+
+    return Tensor(std::move(dims), std::move(data));
+}
+
+// Creates a Tensor from a (nested) Python iterable of data values.
+//
 // Throws ValueError if the data isn't rectangular.
 // Throws TypeError if the data values aren't numbers.
 Tensor python_data_to_tensor(py::object py_data) {

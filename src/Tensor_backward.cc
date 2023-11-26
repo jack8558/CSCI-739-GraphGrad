@@ -10,6 +10,7 @@ namespace py = pybind11;
 #include "Tensor.h"
 #include "TransposeOp.h"
 #include "UnaryOp.h"
+#include "utils.h"
 
 // Collects all the nodes in the graph under the given root, in reverse topological order.
 static void topo_sort_visit(Tensor* node, std::unordered_set<Tensor*>& visited_nodes, std::vector<Tensor*>& sorted_nodes) {
@@ -131,31 +132,31 @@ void BinaryOp::backward_step() {
         case BinaryOpType::MATMUL:
             // For matmul, it is eiter 1D * 2D or 2D * 2D
             if (this->leftChild->dims.size() == 1) {
-                this->rightChild->add_grad(matmul(transpose(this->leftChild,0,0), this->grad * Tensor::ones(this->dims)));
+                this->rightChild->add_grad(matmul(transpose(this->leftChild, 0, 0), this->grad * Tensor::ones(this->dims)));
             } else {
-                if (product(this->rightChild->dims) > 1)
-                    this->rightChild->add_grad(matmul(transpose(this->leftChild,0,1), this->grad * Tensor::ones(this->dims)));
-                else
+                if (product(this->rightChild->dims) > 1) {
+                    this->rightChild->add_grad(matmul(transpose(this->leftChild, 0, 1), this->grad * Tensor::ones(this->dims)));
+                } else {
                     this->rightChild->add_grad(sum(this->grad * this->leftChild));
+                }
             }
 
             if (this->rightChild->dims.size() == 1) {
-                this->leftChild->add_grad(matmul(this->grad * Tensor::ones(this->dims), transpose(this->rightChild,0,0)));
-            }
-            else {
-                this->leftChild->add_grad(matmul(this->grad * Tensor::ones(this->dims), transpose(this->rightChild,0,1)));
+                this->leftChild->add_grad(matmul(this->grad * Tensor::ones(this->dims), transpose(this->rightChild, 0, 0)));
+            } else {
+                this->leftChild->add_grad(matmul(this->grad * Tensor::ones(this->dims), transpose(this->rightChild, 0, 1)));
             }
             break;
         case BinaryOpType::POW:
             // x^n -> n*x^(n-1)
-            if (product(this->leftChild->dims) > 1){
+            if (product(this->leftChild->dims) > 1) {
                 this->leftChild->add_grad(this->grad * this->rightChild * pow(this->leftChild, (this->rightChild - Tensor::ones(this->rightChild->dims))));
             } else {
                 this->leftChild->add_grad(sum(this->grad * this->rightChild * pow(this->leftChild, (this->rightChild - Tensor::ones(this->rightChild->dims)))));
             }
 
             // a^x -> ln(a) a^x
-            if (product(this->rightChild->dims) > 1){
+            if (product(this->rightChild->dims) > 1) {
                 this->rightChild->add_grad(this->grad * log(this->leftChild) * pow(this->leftChild, this->rightChild));
             } else {
                 this->rightChild->add_grad(sum(this->grad * log(this->leftChild) * pow(this->leftChild, this->rightChild)));

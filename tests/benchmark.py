@@ -24,18 +24,17 @@ def get_data(M, N, threshold):
     return ret
 
 
-
 def test1():
     x = get_data(3, 5, 0.5)
     y = get_data(5, 7, 0.5)
     z = get_data(7, 1, 0.5)
 
     # Graph Grad
-    start = time.time()
+    start = time.perf_counter()
 
-    tensor_x = gg.Tensor(x.tolist())
-    tensor_y = gg.Tensor(y.tolist())
-    tensor_z = gg.Tensor(z.tolist())
+    tensor_x = gg.Tensor(x)
+    tensor_y = gg.Tensor(y)
+    tensor_z = gg.Tensor(z)
 
     gg_res = tensor_x.matmul(tensor_y).relu().matmul(tensor_z)
 
@@ -43,12 +42,12 @@ def test1():
     print(gg_res)
     print()
 
-    end = time.time()
+    end = time.perf_counter()
     gg_time = end - start
 
     # Torch
-    start = time.time()
-    
+    start = time.perf_counter()
+
     tensor_x = torch.tensor(x)
     tensor_y = torch.tensor(y)
     tensor_z = torch.tensor(z)
@@ -59,7 +58,7 @@ def test1():
     print(torch_res)
     print()
 
-    end = time.time()
+    end = time.perf_counter()
     torch_time = end - start
 
     assert np.isclose(gg_res.to_list(), torch_res, rtol=1e-4).all()
@@ -73,11 +72,11 @@ def test2():
     z = get_data(1000, 1, 1.0)
 
     # Graph Grad
-    start = time.time()
+    start = time.perf_counter()
 
-    tensor_x = gg.Tensor(x.tolist())
-    tensor_y = gg.Tensor(y.tolist())
-    tensor_z = gg.Tensor(z.tolist())
+    tensor_x = gg.Tensor(x)
+    tensor_y = gg.Tensor(y)
+    tensor_z = gg.Tensor(z)
 
     gg_res = tensor_x.matmul(tensor_y).relu().matmul(tensor_z)
 
@@ -85,12 +84,12 @@ def test2():
     print(gg_res)
     print()
 
-    end = time.time()
+    end = time.perf_counter()
     gg_time = end - start
 
     # Torch
-    start = time.time()
-    
+    start = time.perf_counter()
+
     tensor_x = torch.tensor(x)
     tensor_y = torch.tensor(y)
     tensor_z = torch.tensor(z)
@@ -101,7 +100,7 @@ def test2():
     print(torch_res)
     print()
 
-    end = time.time()
+    end = time.perf_counter()
     torch_time = end - start
 
     assert np.isclose(gg_res.to_list(), torch_res, rtol=1e-4).all()
@@ -116,29 +115,29 @@ def test3(epochs):
     learning_rate = 0.01
 
     x = get_data(N, M, 1)
-    y = np.random.uniform(low=-1.0,high=1.0,size=[M,P]) / math.sqrt(M)
-    z = np.random.uniform(low=-1.0,high=1.0,size=[P,1]) / math.sqrt(P)
+    y = np.random.uniform(low=-1.0, high=1.0, size=[M, P]) / math.sqrt(M)
+    z = np.random.uniform(low=-1.0, high=1.0, size=[P, 1]) / math.sqrt(P)
     label = np.random.uniform(size=[1000])
 
     # Graph Grad
-    start = time.time()
+    start = time.perf_counter()
 
-    tensor_x = gg.Tensor(x.tolist())
-    tensor_y = gg.Tensor(y.tolist())
-    tensor_z = gg.Tensor(z.tolist())
-    tensor_label = gg.Tensor(label.tolist())
+    tensor_x = gg.Tensor(x)
+    tensor_y = gg.Tensor(y)
+    tensor_z = gg.Tensor(z)
+    tensor_label = gg.Tensor(label)
     gg_lr = gg.Tensor([learning_rate])
     gg_const = gg.Tensor([1.0 / N])
 
     for i in range(epochs):
-        h1 = tensor_x.matmul(tensor_y) # N*P
-        h2 = h1.relu() # N*P
-        out = h2.matmul(tensor_z) # N*1
-        grad_out = out.reshape([N]).subtract(tensor_label).mul(gg_const) # N
-        grad_tensor_z = h2.transpose(0,1).matmul(grad_out.reshape([N,1])) # P*1
-        grad_h2 = grad_out.reshape([N,1]).matmul(tensor_z.transpose(0,1))
+        h1 = tensor_x.matmul(tensor_y)  # N*P
+        h2 = h1.relu()  # N*P
+        out = h2.matmul(tensor_z)  # N*1
+        grad_out = out.reshape([N]).subtract(tensor_label).mul(gg_const)  # N
+        grad_tensor_z = h2.transpose(0, 1).matmul(grad_out.reshape([N, 1]))  # P*1
+        grad_h2 = grad_out.reshape([N, 1]).matmul(tensor_z.transpose(0, 1))
         grad_h1 = h1.binilarize().mul(grad_h2)
-        grad_tensor_y = tensor_x.transpose(0,1).matmul(grad_h1)
+        grad_tensor_y = tensor_x.transpose(0, 1).matmul(grad_h1)
 
         tensor_y = tensor_y.subtract(grad_tensor_y.mul(gg_lr))
         tensor_z = tensor_z.subtract(grad_tensor_z.mul(gg_lr))
@@ -148,11 +147,11 @@ def test3(epochs):
     print(gg_res)
     print()
 
-    end = time.time()
+    end = time.perf_counter()
     gg_time = end - start
 
     # Torch
-    start = time.time()
+    start = time.perf_counter()
 
     tensor_x = torch.tensor(x)
     tensor_y = torch.tensor(y)
@@ -160,14 +159,14 @@ def test3(epochs):
     tensor_label = torch.tensor(label)
 
     for i in range(epochs):
-        h1 = tensor_x.matmul(tensor_y) # N*P
-        h2 = h1.relu() # N*P
-        out = h2.matmul(tensor_z) # N*1
-        grad_out = out.reshape([N]).subtract(tensor_label).mul(1.0 / N) # N
-        grad_tensor_z = h2.transpose(0,1).matmul(grad_out.reshape([N,1])) # P*1
-        grad_h2 = grad_out.reshape([N,1]).matmul(tensor_z.transpose(0,1))
+        h1 = tensor_x.matmul(tensor_y)  # N*P
+        h2 = h1.relu()  # N*P
+        out = h2.matmul(tensor_z)  # N*1
+        grad_out = out.reshape([N]).subtract(tensor_label).mul(1.0 / N)  # N
+        grad_tensor_z = h2.transpose(0, 1).matmul(grad_out.reshape([N, 1]))  # P*1
+        grad_h2 = grad_out.reshape([N, 1]).matmul(tensor_z.transpose(0, 1))
         grad_h1 = torch.where(h1 > 0.0, 1.0, 0.0).mul(grad_h2)
-        grad_tensor_y = tensor_x.transpose(0,1).matmul(grad_h1)
+        grad_tensor_y = tensor_x.transpose(0, 1).matmul(grad_h1)
 
         tensor_y = tensor_y.subtract(grad_tensor_y.mul(learning_rate))
         tensor_z = tensor_z.subtract(grad_tensor_z.mul(learning_rate))
@@ -177,14 +176,13 @@ def test3(epochs):
     print(torch_res)
     print()
 
-    end = time.time()
+    end = time.perf_counter()
     torch_time = end - start
 
     assert np.isclose(gg_res.to_list(), torch_res, rtol=1e-4).all()
 
     return gg_res, gg_time, torch_res, torch_time
-    
-    
+
 
 if __name__ == "__main__":
     print("Starting test 1...")

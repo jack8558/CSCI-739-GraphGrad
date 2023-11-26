@@ -14,7 +14,7 @@ $(OUTPUT_FILE): $(INPUT_FILES)
 		-o graphgrad$$(python3-config --extension-suffix) \
 		-Wall -std=c++17 \
 		-fPIC -shared $$(python3 -m pybind11 --includes) \
-		-O3 -fopenmp
+		-O3 -fopenmp -march=native
 
 # The clean target removes the output file.
 clean:
