@@ -59,6 +59,8 @@ PYBIND11_MODULE(graphgrad, m) {
             return t.to_string();
         });
     m.def("rand", &Tensor::rand);
+    m.def("zeros", &Tensor::zeros);
+    m.def("ones", &Tensor::ones);
 
 #define DEF_TENSOR_FUNC(name, func_lambda) \
     {                                      \
