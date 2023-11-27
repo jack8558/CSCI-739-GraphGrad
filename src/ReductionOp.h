@@ -44,7 +44,7 @@ class ReductionOp : public Tensor {
             // Evaluate the child node and get its data.
             const scalar_t* child_data = this->child->eval();
 
-            double tmp = data[0];
+            scalar_t tmp = data[0];
 
             #pragma omp parallel for reduction(+:tmp)
             for (size_t i = 0; i < product(this->child->dims); i++) {

@@ -48,9 +48,9 @@ def test1():
     # Torch
     start = time.perf_counter()
 
-    tensor_x = torch.tensor(x)
-    tensor_y = torch.tensor(y)
-    tensor_z = torch.tensor(z)
+    tensor_x = torch.tensor(x, dtype=torch.float64)
+    tensor_y = torch.tensor(y, dtype=torch.float64)
+    tensor_z = torch.tensor(z, dtype=torch.float64)
 
     torch_res = tensor_x.matmul(tensor_y).relu().matmul(tensor_z)
 
@@ -90,9 +90,9 @@ def test2():
     # Torch
     start = time.perf_counter()
 
-    tensor_x = torch.tensor(x)
-    tensor_y = torch.tensor(y)
-    tensor_z = torch.tensor(z)
+    tensor_x = torch.tensor(x, dtype=torch.float64)
+    tensor_y = torch.tensor(y, dtype=torch.float64)
+    tensor_z = torch.tensor(z, dtype=torch.float64)
 
     torch_res = tensor_x.matmul(tensor_y).relu().matmul(tensor_z)
 
@@ -153,10 +153,10 @@ def test3(epochs):
     # Torch
     start = time.perf_counter()
 
-    tensor_x = torch.tensor(x)
-    tensor_y = torch.tensor(y)
-    tensor_z = torch.tensor(z)
-    tensor_label = torch.tensor(label)
+    tensor_x = torch.tensor(x, dtype=torch.float64)
+    tensor_y = torch.tensor(y, dtype=torch.float64)
+    tensor_z = torch.tensor(z, dtype=torch.float64)
+    tensor_label = torch.tensor(label, dtype=torch.float64)
 
     for i in range(epochs):
         h1 = tensor_x.matmul(tensor_y)  # N*P
@@ -219,11 +219,11 @@ def cse_test(epochs):
     # Torch
     start = time.perf_counter()
 
-    tensor_x = torch.tensor(x)
-    tensor_y = torch.tensor(y)
-    tensor_z = torch.tensor(z)
+    tensor_x = torch.tensor(x, dtype=torch.float64)
+    tensor_y = torch.tensor(y, dtype=torch.float64)
+    tensor_z = torch.tensor(z, dtype=torch.float64)
 
-    out = torch.tensor([0.0])
+    out = torch.tensor([0.0], dtype=torch.float64)
     for i in range(epochs):
         x_y = tensor_x.matmul(tensor_y)
         y_z = x_y.matmul(tensor_z)
