@@ -83,6 +83,9 @@ void UnaryOp::backward_step() {
         case UnaryOpType::EXP:
             this->child->add_grad(this->grad * shared_from_this());
             break;
+        case UnaryOpType::LOG:
+            this->child->add_grad(this->grad * reciprocal(this->child));
+            break;
         default:
             throw std::domain_error("bad op_type");
     }
