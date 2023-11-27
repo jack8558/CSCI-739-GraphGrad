@@ -32,9 +32,9 @@ def test1():
     # Graph Grad
     start = time.perf_counter()
 
-    tensor_x = gg.Tensor(x)
-    tensor_y = gg.Tensor(y)
-    tensor_z = gg.Tensor(z)
+    tensor_x = gg.tensor(x)
+    tensor_y = gg.tensor(y)
+    tensor_z = gg.tensor(z)
 
     gg_res = tensor_x.matmul(tensor_y).relu().matmul(tensor_z)
 
@@ -74,9 +74,9 @@ def test2():
     # Graph Grad
     start = time.perf_counter()
 
-    tensor_x = gg.Tensor(x)
-    tensor_y = gg.Tensor(y)
-    tensor_z = gg.Tensor(z)
+    tensor_x = gg.tensor(x)
+    tensor_y = gg.tensor(y)
+    tensor_z = gg.tensor(z)
 
     gg_res = tensor_x.matmul(tensor_y).relu().matmul(tensor_z)
 
@@ -122,12 +122,12 @@ def test3(epochs):
     # Graph Grad
     start = time.perf_counter()
 
-    tensor_x = gg.Tensor(x)
-    tensor_y = gg.Tensor(y)
-    tensor_z = gg.Tensor(z)
-    tensor_label = gg.Tensor(label)
-    gg_lr = gg.Tensor([learning_rate])
-    gg_const = gg.Tensor([1.0 / N])
+    tensor_x = gg.tensor(x)
+    tensor_y = gg.tensor(y)
+    tensor_z = gg.tensor(z)
+    tensor_label = gg.tensor(label)
+    gg_lr = gg.tensor([learning_rate])
+    gg_const = gg.tensor([1.0 / N])
 
     for i in range(epochs):
         h1 = tensor_x.matmul(tensor_y)  # N*P
@@ -196,11 +196,11 @@ def cse_test(epochs):
     # Graph Grad
     start = time.perf_counter()
 
-    tensor_x = gg.Tensor(x)
-    tensor_y = gg.Tensor(y)
-    tensor_z = gg.Tensor(z)
+    tensor_x = gg.tensor(x)
+    tensor_y = gg.tensor(y)
+    tensor_z = gg.tensor(z)
 
-    out = gg.Tensor([0])
+    out = gg.tensor([0])
     for i in range(epochs):
         x_y = tensor_x.matmul(tensor_y)
         y_z = x_y.matmul(tensor_z)

@@ -16,31 +16,31 @@ import numpy as np
 
 @pytest.fixture(scope="class")
 def gg_scalar1():
-    return gg.Tensor.rand([1])
+    return gg.rand([1])
 
 
 @pytest.fixture(scope="class")
 def gg_scalar2():
-    return gg.Tensor.rand([1, 1])
+    return gg.rand([1, 1])
 
 
 @pytest.fixture(scope="class")
 def gg_scalar3():
-    return gg.Tensor.rand([1, 1, 1])
+    return gg.rand([1, 1, 1])
 
 
 @pytest.fixture(scope="class")
 def gg_tensor_10_5():
-    return gg.Tensor.rand([10, 5])
+    return gg.rand([10, 5])
 
 
 @pytest.fixture(scope="class")
 def gg_tensor_10_1():
-    return gg.Tensor.rand([10, 1])
+    return gg.rand([10, 1])
 
 @pytest.fixture(scope="class")
 def gg_tensor_1_10():
-    return gg.Tensor.rand([1, 10])
+    return gg.rand([1, 10])
 
 
 class TestBinaryOP:
@@ -110,8 +110,8 @@ class TestBinaryOP:
 
     @pytest.mark.parametrize("gg_op", [gg_op for gg_op, _ in BINARY_OPS])
     def test_binary_op_shape_mismatch_raises(self, gg_op):
-        tensor1 = gg.Tensor.rand([3, 4])
-        tensor2 = gg.Tensor.rand([4, 3])
+        tensor1 = gg.rand([3, 4])
+        tensor2 = gg.rand([4, 3])
         with pytest.raises(ValueError):
             gg_op(tensor1, tensor2)
 
@@ -125,8 +125,8 @@ class TestBinaryOP:
         torch_func,
         request,
     ):
-        gg_left = gg.Tensor(request.getfixturevalue(gg_left).to_list())
-        gg_right = gg.Tensor(request.getfixturevalue(gg_right).to_list())
+        gg_left = gg.tensor(request.getfixturevalue(gg_left).to_list())
+        gg_right = gg.tensor(request.getfixturevalue(gg_right).to_list())
         gg_result = gg_func(gg_left, gg_right)
         torch_left = torch.tensor(gg_left.to_list(), dtype=torch.float64, requires_grad=True)
         torch_right = torch.tensor(gg_right.to_list(), dtype=torch.float64, requires_grad=True)
@@ -174,8 +174,10 @@ class TestBinaryOP:
         torch_result = torch.matmul(torch_left, torch_right)
 
         gg_result = gg.matmul(gg_left, gg_right)
-
-        assert gg_result.dims() == list(torch_result.size())
+        if list(torch_result.size()) == []:
+            assert gg_result.dims() == [1]
+        else:
+            assert gg_result.dims() == list(torch_result.size())
         assert np.isclose(
             gg_result.to_list(),
             torch_result,
@@ -183,7 +185,10 @@ class TestBinaryOP:
         ).all()
 
         gg_result = gg_left.matmul(gg_right)
-        assert gg_result.dims() == list(torch_result.size())
+        if list(torch_result.size()) == []:
+            assert gg_result.dims() == [1]
+        else:
+            assert gg_result.dims() == list(torch_result.size())
         assert np.isclose(
             gg_result.to_list(),
             torch_result,
@@ -192,8 +197,8 @@ class TestBinaryOP:
 
     @pytest.mark.parametrize("gg_left, gg_right", MATMUL_INPUTS)
     def test_matmul_backward(self, gg_left, gg_right, request):
-        gg_left = gg.Tensor(request.getfixturevalue(gg_left).to_list())
-        gg_right = gg.Tensor(request.getfixturevalue(gg_right).to_list())
+        gg_left = gg.tensor(request.getfixturevalue(gg_left).to_list())
+        gg_right = gg.tensor(request.getfixturevalue(gg_right).to_list())
         gg_result = gg.matmul(gg_left, gg_right)
         torch_left = torch.tensor(gg_left.to_list(), dtype=torch.float64, requires_grad=True)
         torch_right = torch.tensor(gg_right.to_list(), dtype=torch.float64, requires_grad=True)
@@ -222,7 +227,7 @@ class TestBinaryOP:
         ],
     )
     def test_matmul_shape_mismatch_raises(self, shape1, shape2):
-        tensor1 = gg.Tensor.rand(shape1)
-        tensor2 = gg.Tensor.rand(shape2)
+        tensor1 = gg.rand(shape1)
+        tensor2 = gg.rand(shape2)
         with pytest.raises(ValueError):
             gg.matmul(tensor1, tensor2)

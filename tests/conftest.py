@@ -14,14 +14,14 @@ import graphgrad as gg
 
 @pytest.fixture(scope="session")
 def gg_tensor_5_10():
-    return gg.Tensor.rand([5, 10])
+    return gg.rand([5, 10])
 
 
 @pytest.fixture(scope="session")
 def gg_tensor_10_10():
-    return gg.Tensor.rand([10, 10])
+    return gg.rand([10, 10])
 
 
 @pytest.fixture(scope="session")
 def gg_tensor_50_100():
-    return gg.Tensor.rand([50, 100])
+    return gg.rand([50, 100])

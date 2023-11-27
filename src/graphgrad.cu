@@ -12,8 +12,9 @@ namespace py = pybind11;
 #include "ReshapeOp.h"
 #include "Tensor.h"
 #include "TransposeOp.h"
-#include "UnaryOp.h"
+#include "UnaryOp.cuh"
 #include "python_data_to_tensor.h"
+#include "Tensor_backward.cuh"
 
 static py::object make_sublist(const std::vector<size_t>& dims, const std::vector<size_t>& strides, const scalar_t* data, size_t dim) {
     if (dim == dims.size()) {
@@ -43,11 +44,10 @@ static py::object to_list(Tensor& t) {
 }
 
 PYBIND11_MODULE(graphgrad, m) {
-    auto tensor_class = py::class_<Tensor, std::shared_ptr<Tensor>>(m, "Tensor");
+    auto tensor_class = py::class_<Tensor, std::shared_ptr<Tensor>>(m, "tensor");
     tensor_class
         .def(py::init(&numpy_array_to_tensor))
         .def(py::init(&python_data_to_tensor))
-        .def_static("rand", &Tensor::rand)
         .def("dims", [](const Tensor& t) { return t.dims; })
         .def("backward", &Tensor::backward)
         .def_readwrite("grad", &Tensor::grad)
@@ -56,6 +56,7 @@ PYBIND11_MODULE(graphgrad, m) {
             t.eval();
             return t.to_string();
         });
+    m.def("rand", &Tensor::rand);
 
 #define DEF_TENSOR_FUNC(name, func_lambda) \
     {                                      \

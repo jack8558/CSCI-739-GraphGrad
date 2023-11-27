@@ -16,17 +16,17 @@ import numpy as np
 
 @pytest.fixture(scope="class")
 def gg_tensor_50_50_50():
-    return gg.Tensor.rand([50, 50, 50])
+    return gg.rand([50, 50, 50])
 
 
 @pytest.fixture(scope="class")
 def gg_tensor_50_100_200():
-    return gg.Tensor.rand([50, 100, 200])
+    return gg.rand([50, 100, 200])
 
 
 @pytest.fixture(scope="class")
 def gg_tensor_100_20_200_30():
-    return gg.Tensor.rand([100, 20, 200, 30])
+    return gg.rand([100, 20, 200, 30])
 
 
 class TestTransposeOp:
