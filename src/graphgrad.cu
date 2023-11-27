@@ -16,6 +16,8 @@ namespace py = pybind11;
 #include "python_data_to_tensor.h"
 #include "Tensor_backward.cuh"
 
+bool use_gpu = false;
+
 static py::object make_sublist(const std::vector<size_t>& dims, const std::vector<size_t>& strides, const scalar_t* data, size_t dim) {
     if (dim == dims.size()) {
         return py::float_(*data);

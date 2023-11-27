@@ -5,7 +5,7 @@
 #include <string>
 #include <vector>
 
-#include "types.h"
+#include "globals.h"
 
 #ifdef __CUDACC__
 inline void assert_no_cuda_error() {
