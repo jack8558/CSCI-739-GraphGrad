@@ -168,13 +168,7 @@ class TransposeOp : public Tensor {
     size_t dim1;
 };
 
-// Functions:
-
-#define IMPL_TRANS_FUNC(func_name)                                                                   \
-    inline static std::shared_ptr<Tensor> func_name(std::shared_ptr<Tensor> t, int dim0, int dim1) { \
-        return std::shared_ptr<Tensor>(new TransposeOp(t, dim0, dim1));                              \
-    }
-
-IMPL_TRANS_FUNC(transpose)
-
-#undef IMPL_TRANS_FUNC
+inline static std::shared_ptr<Tensor> transpose(std::shared_ptr<Tensor> t, int dim0, int dim1) {
+    // check if in hashmap
+    return std::shared_ptr<Tensor>(new TransposeOp(t, dim0, dim1));                             
+}

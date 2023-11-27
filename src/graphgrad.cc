@@ -78,15 +78,9 @@ PYBIND11_MODULE(graphgrad, m) {
     DEF_UNARY("exp", EXP);
     DEF_UNARY("log", LOG);
 
-#define DEF_TRANSPOSE(name) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t, int dim0, int dim1) { \
-    return std::shared_ptr<Tensor>(new TransposeOp(t, dim0, dim1));                                   \
-});
-    DEF_TRANSPOSE("transpose");
+DEF_TENSOR_FUNC("transpose", &transpose);
 
-#define DEF_RESHAPE(name) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t, std::vector<size_t> new_dims) { \
-    return std::shared_ptr<Tensor>(new ReshapeOp(t, new_dims));                                               \
-});
-    DEF_RESHAPE("reshape");
+DEF_TENSOR_FUNC("reshape", &reshape);
 
 #define DEF_BINARY(name, op_type) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2) { \
     return std::shared_ptr<Tensor>(new BinaryOp(t1, t2, BinaryOpType::op_type));                                     \

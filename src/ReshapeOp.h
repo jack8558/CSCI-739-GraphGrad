@@ -71,13 +71,6 @@ class ReshapeOp : public Tensor {
     std::shared_ptr<Tensor> child;
 };
 
-// Functions:
-
-#define IMPL_RESHAPE_FUNC(func_name)                                                                             \
-    inline static std::shared_ptr<Tensor> func_name(std::shared_ptr<Tensor> t, std::vector<size_t> new_dims) { \
-        return std::shared_ptr<Tensor>(new ReshapeOp(t, new_dims));                                            \
-    }
-
-IMPL_RESHAPE_FUNC(reshape)
-
-#undef IMPL_RESHAPE_FUNC
+inline static std::shared_ptr<Tensor> reshape(std::shared_ptr<Tensor> t, std::vector<size_t> new_dims) {
+    return std::shared_ptr<Tensor>(new ReshapeOp(t, new_dims));                                           
+}
