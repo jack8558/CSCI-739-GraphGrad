@@ -14,8 +14,6 @@ namespace py = pybind11;
 #include "TransposeOp.h"
 #include "UnaryOp.h"
 #include "python_data_to_tensor.h"
-#include "LRUMap.h"
-
 
 static py::object make_sublist(const std::vector<size_t>& dims, const std::vector<size_t>& strides, const scalar_t* data, size_t dim) {
     if (dim == dims.size()) {
@@ -53,7 +51,6 @@ PYBIND11_MODULE(graphgrad, m) {
         .def("dims", [](const Tensor& t) { return t.dims; })
         .def("backward", &Tensor::backward)
         .def_readwrite("grad", &Tensor::grad)
-        .def_readwrite_static("lruMap", &Tensor::lruMap)
         .def("to_list", to_list)
         .def("__repr__", [](Tensor& t) {
             t.eval();
@@ -78,9 +75,15 @@ PYBIND11_MODULE(graphgrad, m) {
     DEF_UNARY("exp", EXP);
     DEF_UNARY("log", LOG);
 
-DEF_TENSOR_FUNC("transpose", &transpose);
+#define DEF_TRANSPOSE(name) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t, int dim0, int dim1) { \
+    return std::shared_ptr<Tensor>(new TransposeOp(t, dim0, dim1));                                   \
+});
+    DEF_TRANSPOSE("transpose");
 
-DEF_TENSOR_FUNC("reshape", &reshape);
+#define DEF_RESHAPE(name) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t, std::vector<size_t> new_dims) { \
+    return std::shared_ptr<Tensor>(new ReshapeOp(t, new_dims));                                               \
+});
+    DEF_RESHAPE("reshape");
 
 #define DEF_BINARY(name, op_type) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2) { \
     return std::shared_ptr<Tensor>(new BinaryOp(t1, t2, BinaryOpType::op_type));                                     \

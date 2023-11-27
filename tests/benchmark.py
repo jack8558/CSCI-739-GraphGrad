@@ -212,6 +212,7 @@ def cse_test(epochs):
     print()
 
     end = time.perf_counter()
+    gg_time = end - start
 
     # Torch
     start = time.perf_counter()
@@ -264,7 +265,7 @@ if __name__ == "__main__":
     print("\n=========================\n")
 
     print("Starting test 5...")
-    _, gg_time, _, torch_time = cse_test(100)
+    _, gg_time, _, torch_time = cse_test(1000)
     print(f"Test 5 finished.\n\tGraphGrad time: {gg_time}\n\tTorch time: {torch_time}")
 
     print("\n=========================\n")
