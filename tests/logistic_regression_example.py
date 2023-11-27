@@ -78,8 +78,6 @@ def main():
       
     # Prediction on test set 
     Y_pred = model.predict( gg.tensor(X_test) ) 
-    print(Y_pred, Y_pred.shape)
-    print(Y_test, Y_test.shape)
     Y_pred1 = model1.predict( X_test ) 
       
     # measure performance     
