@@ -204,7 +204,9 @@ def cse_test(epochs):
     for i in range(epochs):
         x_y = tensor_x.matmul(tensor_y)
         y_z = x_y.matmul(tensor_z)
-        out += y_z.sum()
+        out1 = y_z * y_z
+        out2 = y_z * out1
+        out += out2.sum()
 
     gg_res = out
     print("GraphGrad result:")
@@ -225,7 +227,9 @@ def cse_test(epochs):
     for i in range(epochs):
         x_y = tensor_x.matmul(tensor_y)
         y_z = x_y.matmul(tensor_z)
-        out += y_z.sum()
+        out1 = y_z * y_z
+        out2 = y_z * out1
+        out += out2.sum()
 
     torch_res = out
     print("Torch result:")
