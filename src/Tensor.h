@@ -11,9 +11,8 @@
 #include <unordered_map>
 
 #include "utils.h"
+#include "globals.h"
 #include "LRUMap.h"
-
-using scalar_t = double;
 
 class Tensor : public std::enable_shared_from_this<Tensor> {
    public:
