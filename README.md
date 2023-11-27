@@ -296,8 +296,6 @@ or
 ```
 
 
-## Classifier
-
 ## Unit test
 Make sure pytest is installed and run following command.
 ```
@@ -315,9 +313,10 @@ Below are optimization techniques GraphGrad uses
 - GPU optimization: TODO
 
 ## Classifier
-A simple binary logistic logression classifier has been implemented in tests/logistic_regression_example.py. The accuracy was compared against sklearn's logistic regression classifier and achieves comparable performance on sklearn's breast_cancer dataset:
+A simple binary logistic logression classifier has been implemented in `tests/logistic_regression_example.py`. The accuracy was compared against sklearn's logistic regression classifier and achieves comparable performance on sklearn's breast_cancer dataset:
+
     sklearn accuracy: 96.32%
-    our accuracy: 93.68%
+    GrphGrad model accuracy: 93.68%
 
 ## Benchmark with Pytorch
 Pytorch has been chosen to be a benchmark and below is the comparision with GraphGrad.
