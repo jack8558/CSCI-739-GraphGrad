@@ -314,8 +314,10 @@ Below are optimization techniques GraphGrad uses
 - CSE (Common Subexpression Elimination): CSE is implemented, so common subexpressions do not need to be computed again. GraphGrad has an internal hashmap that stores values of tensors that were computed before. If the hashmap exceeds the max capacity, it will remove the least recently used element from the hashmap.
 - GPU optimization: TODO
 
-## Classifier TODO
-TODO
+## Classifier
+A simple binary logistic logression classifier has been implemented in tests/logistic_regression_example.py. The accuracy was compared against sklearn's logistic regression classifier and achieves comparable performance on sklearn's breast_cancer dataset:
+    sklearn accuracy: 96.32%
+    our accuracy: 93.68%
 
 ## Benchmark with Pytorch
 Pytorch has been chosen to be a benchmark and below is the comparision with GraphGrad.
