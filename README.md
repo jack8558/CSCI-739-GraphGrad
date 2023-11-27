@@ -59,8 +59,8 @@ Users can construct the leaf tensor by using following constructors.
 <Tensor: dims=[2, 3], data=[0.049640, 0.684461, 0.721733, 0.942821, 0.729735, 0.754699]>
 ```
 
-### Scalr tensor
-You can define scalar tensor by not specifying the dimension. The dimension will be shown empty for scalar 
+### Scalar tensor
+You can define scalar tensor like below.
 ```
 >>> tensor = gg.tensor(1)
 >>> tensor
@@ -74,7 +74,7 @@ GraphGrad uses tensor operations to combine tensors and build graphs. For exampl
 
 ![Alt text](image-1.png)
 
-Here blue rectangle is showed as leaf tensors and orange circles are representing operators that combines tensors.
+Here blue rectangle is shown as leaf tensors and orange circles are representing operators that combines tensors.
 
 NOTE: Since GraphGrad uses lazy evaluation, it does not evaluate until the eval function is called. Because of this, it accumulates the nodes and constructs the graph until eval is called. Due to this reason, if a user tries to build a super big graph and it does not get evaluated in an intermediate step, it might run into a memory error.
 
@@ -337,22 +337,27 @@ Below are the reusult of benchmark when ran in following machine spec.
 ### Result
 
 Test 1:
+
     GraphGrad time: 0.0042638309532776475
     Torch time: 0.02429886907339096
 
-Test 2 finished.
+Test 2:
+
     GraphGrad time: 0.19860418199095875
     Torch time: 0.02489967504516244
 
-Test 3 finished.
+Test 3:
+
     GraphGrad time: 0.8879164479440078
     Torch time: 0.091006567934528
 
-Test 4 finished.
+Test 4:
+
     GraphGrad time: 8.042721451027319
     Torch time: 0.719514610930346
 
-Test 5 (Case when there are multiple common subexpression)
+Test 5 (Case when there are multiple common subexpression):
+
     GraphGrad time: 0.06286677299067378
     Torch time: 1.233367821900174
 
