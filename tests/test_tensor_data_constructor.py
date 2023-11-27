@@ -39,7 +39,7 @@ import numpy as np
 )
 def test_tensor_data_constructor(data):
     """Verify that the data constructor builds the same array as NumPy."""
-    gg_tensor = gg.Tensor(data)
+    gg_tensor = gg.tensor(data)
     np_array = np.array(data)
 
     np_array_from_gg = np.array(gg_tensor.to_list())
@@ -69,4 +69,4 @@ def test_tensor_data_constructor(data):
 def test_tensor_data_constructor_raises(data):
     """Verify that the data constructor raises an error when given invalid array data."""
     with pytest.raises((ValueError, TypeError)):
-        gg.Tensor(data)
+        gg.tensor(data)

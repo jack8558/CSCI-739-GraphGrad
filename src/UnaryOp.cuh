@@ -14,6 +14,13 @@ enum class UnaryOpType {
     LOG,
 };
 
+__global__ void neg_gpu(scalar_t *in, scalar_t *out, size_t len) {  
+    size_t i = blockIdx.x * blockDim.x + threadIdx.x;                 
+    if (i < len){                                                     
+        out[i] =  -in[i];                                          
+    }                                                                 
+}
+
 class UnaryOp : public Tensor {
    public:
     UnaryOp(std::shared_ptr<Tensor> arg, UnaryOpType op_type)

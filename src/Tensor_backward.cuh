@@ -9,7 +9,7 @@ namespace py = pybind11;
 #include "ReshapeOp.h"
 #include "Tensor.h"
 #include "TransposeOp.h"
-#include "UnaryOp.h"
+#include "UnaryOp.cuh"
 #include "utils.h"
 
 // Collects all the nodes in the graph under the given root, in reverse topological order.
