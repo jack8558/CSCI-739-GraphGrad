@@ -10,35 +10,8 @@ enum class ReductionOpType {
     SUM,
 };
 
-// #define IMPL_REDUCTION_OP(__name, __expr)                                                     \
-//     __global__ void kernel_reduction_##__name(const scalar_t* in, CudaArrayRef out, size_t child_len) {             \
-//         size_t index = (blockIdx.x * blockDim.x) + threadIdx.x;                               \
-//                                                                                               \
-//         if (index < child_len) {                                                              \
-//             out.ptr[0] __expr##= in[index];                                                   \
-//         }                                                                                     \
-//     }                                                                                         \
-//                                                                                               \
-//     inline void reduction_compute_data_##__name(Tensor* self, const scalar_t* child_data, size_t child_len) {       \
-//         if (self->on_gpu) {                                                                   \
-//             auto& data = self->allocate_data_gpu();                                           \
-//                                                                                               \
-//             kernel_reduction_##__name<<<num_blocks(child_len), BLOCK_SIZE>>>(child_data, data, child_len); \
-//         } else {                                                                              \
-//             auto& data = self->allocate_data_cpu();                                           \
-//                                                                                               \
-//             scalar_t tmp = 0.0;                                                               \
-//             _Pragma("omp parallel for reduction(+:tmp)")                                      \
-//             for (size_t i = 0; i < child_len; i++) {                                          \
-//                 tmp __expr##= child_data[i];                                                  \
-//             }                                                                                 \
-//             data[0] = tmp;                                                                    \
-//         }                                                                                     \
-//     }
 
-// IMPL_REDUCTION_OP(sum, +)
-
-__global__ void kernel_reduction_sum(const scalar_t* in, CudaArrayRef out, size_t child_len) {             \
+__global__ void kernel_reduction_sum(const scalar_t* in, CudaArrayRef out, size_t child_len) {
     size_t index = (blockIdx.x * blockDim.x) + threadIdx.x;
 
     if (index < child_len) {
@@ -63,8 +36,6 @@ inline void reduction_compute_data_sum(Tensor* self, const scalar_t* child_data,
     }
 }
 
-
-// #undef IMPL_REDUCTION_OP
 
 class ReductionOp : public Tensor {
    public:
