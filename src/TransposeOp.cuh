@@ -5,13 +5,13 @@
 #include "Tensor.h"
 #include "cuda_helpers.h"
 
-__global__ void kernel_transpose_2d(const scalar_t* in, CudaArrayRef out, int rows, int cols) {         
-    size_t index = (blockIdx.x * blockDim.x) + threadIdx.x;                               
-                                                                                            
-    if (index < out.length) {                                            
+__global__ void kernel_transpose_2d(const scalar_t* in, CudaArrayRef out, int rows, int cols) {
+    size_t index = (blockIdx.x * blockDim.x) + threadIdx.x;
+
+    if (index < out.length) {
         int new_index = (index % rows) * cols + (index / rows);
-        out.ptr[new_index] = in[index];                                                                                                                   
-    }                                                                                     
+        out.ptr[new_index] = in[index];
+    }
 }
 
 
@@ -42,7 +42,12 @@ class TransposeOp : public Tensor {
         const scalar_t* child_data = this->child->eval();
 
         if (this->on_gpu){
-            auto& data = this->allocate_data_gpu();    
+            if (!(this->dims.size() == 2 && this->dim0 != this->dim1)) {
+                // TODO: implement general N-D GPU transpose
+                throw std::runtime_error("only 2D transpose is supported on GPU");
+            }
+
+            auto& data = this->allocate_data_gpu();
             kernel_transpose_2d<<<num_blocks(data.length), BLOCK_SIZE>>>(child_data, data, this->dims[0], this->dims[1]);
         } else {
             // Allocate the data buffer.
@@ -78,10 +83,7 @@ class TransposeOp : public Tensor {
                     }
                 }
             }
-
         }
-
-        
     }
 
     std::vector<Tensor*> get_children() override {
