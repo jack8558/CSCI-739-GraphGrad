@@ -291,7 +291,7 @@ or
 >>> tensor_pow
 <Tensor: dims=[2, 2], data=[1.000000, 64.000000, 2187.000000, 65536.000000]>
 ```
-- *sum*: Returns the sum of all elements in the input tensor.
+- *sum*: Returns the sum of all elements in the input tensor. (NOTE: When running the sum with the GPU, it launches a kernel, but no acceleration and optimization are applied since the sum is in shared memory.)
 ``` py
 >>> tensor1 = gg.tensor([[1,2],[3,4]])
 >>> tensor2 = gg.tensor([[5,6],[7,8]])
@@ -325,7 +325,11 @@ or
 ## Unit test
 There are various unit tests that checks if GraphGrad operations are correct. It runs same expressions on both GraphGrad and pytorch and compare the results. Make sure pytest is installed and run following command.
 ```
+-- Run with CPU
 pytest
+
+-- Run with GPU
+pytest --use_gpu
 ```
 
 ## Optimization Techniques
