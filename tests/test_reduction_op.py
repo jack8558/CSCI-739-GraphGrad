@@ -37,6 +37,5 @@ class TestReductionOp:
         gg_result = gg_func(gg_tensor)
         torch_tensor = torch.tensor(gg_tensor.to_list())
         torch_result = torch_func(torch_tensor)
-        assert np.isclose(gg_tensor.to_list(), torch_tensor, rtol=1e-4).all()
         assert gg_result.dims() == []
         assert np.isclose(gg.sum(gg_tensor).to_list(), torch_result, rtol=1e-4).all()
