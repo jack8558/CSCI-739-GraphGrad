@@ -69,11 +69,29 @@ enum class BinaryOpType {
         }                                                                                     \
     }
 
-__global__ void kernel_matmul_2d(const scalar_t* left, const scalar_t* right, CudaArrayRef out) {
-    size_t index = (blockIdx.x * blockDim.x) + threadIdx.x;
 
-    if (index < out.length) {
-        // TODO
+__global__ void kernel_matmul_2d(
+    const scalar_t* in1, const scalar_t* in2, CudaArrayRef out,
+    size_t si, size_t sj, size_t sk  //
+) {
+    size_t i = (blockIdx.x * blockDim.x) + threadIdx.x;
+    size_t j = (blockIdx.y * blockDim.y) + threadIdx.y;
+
+    if (i < si && j < sj) {
+        scalar_t sum = 0.0;
+        size_t k = 0;
+        for (; k + 3 < sk; k += 4) {
+            const scalar_t* in1_ptr = in1 + (i * sk + k);
+            const scalar_t* in2_ptr = in2 + (j * sk + k);
+            #pragma unroll
+            for (size_t ku = 0; ku < 4; ++ku) {
+                sum += *(in1_ptr + ku) * *(in2_ptr + ku);
+            }
+        }
+        for (; k < sk; ++k) {
+            sum += in1[i * sk + k] * in2[j * sk + k];
+        }
+        out.ptr[i * sj + j] = sum;
     }
 }
 
@@ -144,7 +162,18 @@ class BinaryOp : public Tensor {
                     // Make a temporary transpose copy of the righ child's data on gpu
                     std::shared_ptr<Tensor> rigth_data_transposed = transpose(this->rightChild, 0, 1);
                     right_child_data = rigth_data_transposed->eval();
-                    kernel_matmul_2d<<<num_blocks(data.length), BLOCK_SIZE>>>(left_child_data, right_child_data, data);
+
+                    // kernel_binary_##__name<<<num_blocks(data.length), BLOCK_SIZE>>>
+                    
+                    // Prepare arguments for kernel
+                    int si = this->leftChild->dims[0];
+                    int sj = this->rightChild->dims[1];
+                    int sk =  this->rightChild->dims[0];
+
+                    auto num_b = dim3(num_blocks(si, MM_BLOCK_SIZE), num_blocks(sj, MM_BLOCK_SIZE));
+                    auto b_size = dim3(MM_BLOCK_SIZE, MM_BLOCK_SIZE);
+
+                    kernel_matmul_2d<<<num_b, b_size>>>(left_child_data, right_child_data, data, si, sj, sk);
 
                 } else {
                     // Allocate the data buffer.

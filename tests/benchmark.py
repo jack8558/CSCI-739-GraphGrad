@@ -62,7 +62,7 @@ def hw3_test1(device):
     end = time.perf_counter()
     torch_time = end - start
 
-    assert np.isclose(gg_res.to_list(), torch_res, rtol=1e-4).all()
+    assert np.isclose(gg_res.to_list(), torch_res.to('cpu'), rtol=1e-4).all()
 
     return gg_res, gg_time, torch_res, torch_time
 
@@ -104,7 +104,7 @@ def hw3_test2(device):
     end = time.perf_counter()
     torch_time = end - start
 
-    assert np.isclose(gg_res.to_list(), torch_res, rtol=1e-4).all()
+    assert np.isclose(gg_res.to_list(), torch_res.to('cpu'), rtol=1e-4).all()
 
     return gg_res, gg_time, torch_res, torch_time
 
@@ -180,7 +180,7 @@ def hw3_test3(device, epochs):
     end = time.perf_counter()
     torch_time = end - start
 
-    assert np.isclose(gg_res.to_list(), torch_res, rtol=1e-4).all()
+    assert np.isclose(gg_res.to_list(), torch_res.to('cpu'), rtol=1e-4).all()
 
     return gg_res, gg_time, torch_res, torch_time
 
@@ -240,7 +240,7 @@ def cse_test(device, epochs):
     end = time.perf_counter()
     torch_time = end - start
 
-    assert np.isclose(gg_res.to_list(), torch_res, rtol=1e-4).all()
+    assert np.isclose(gg_res.to_list(), torch_res.to('cpu'), rtol=1e-4).all()
 
     return gg_res, gg_time, torch_res, torch_time
 

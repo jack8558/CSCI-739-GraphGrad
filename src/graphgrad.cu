@@ -8,7 +8,7 @@ namespace py = pybind11;
 #include <memory>
 
 #include "BinaryOp.h"
-#include "ReductionOp.h"
+#include "ReductionOp.cuh"
 #include "ReshapeOp.h"
 #include "Tensor.h"
 #include "TransposeOp.cuh"
