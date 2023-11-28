@@ -186,11 +186,11 @@ void BinaryOp::backward_step() {
 }
 
 void ReshapeOp::backward_step() {
-    this->child->add_grad(this->grad * Tensor::ones(this->child->dims));
+    this->child->add_grad(reshape(this->grad, this->child->dims));
 }
 
 void TransposeOp::backward_step() {
-    this->child->add_grad(this->grad * Tensor::ones(this->child->dims));
+    this->child->add_grad(transpose(this->grad, this->dim0, this->dim1));
 }
 
 void ReductionOp::backward_step() {
