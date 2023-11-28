@@ -72,22 +72,20 @@ PYBIND11_MODULE(graphgrad, m) {
     return std::shared_ptr<Tensor>(new UnaryOp(t, UnaryOpType::op_type));              \
 });
     DEF_UNARY("neg", NEG);
-    tensor_class.def("__neg__", [](std::shared_ptr<Tensor> t) { return -t; });
+    tensor_class.def("__neg__", neg);
     DEF_UNARY("reciprocal", RECIP);
     DEF_UNARY("relu", RELU);
     DEF_UNARY("binilarize", BIN);
     DEF_UNARY("exp", EXP);
     DEF_UNARY("log", LOG);
 
-#define DEF_TRANSPOSE(name) def_tensor_func(name, [](std::shared_ptr<Tensor> t, int dim0, int dim1) { \
-    return std::shared_ptr<Tensor>(new TransposeOp(t, dim0, dim1));                                   \
-});
-    DEF_TRANSPOSE("transpose");
+    def_tensor_func("transpose", [](std::shared_ptr<Tensor> t, int dim0, int dim1) {
+        return std::shared_ptr<Tensor>(new TransposeOp(t, dim0, dim1));
+    });
 
-#define DEF_RESHAPE(name) def_tensor_func(name, [](std::shared_ptr<Tensor> t, std::vector<size_t> new_dims) { \
-    return std::shared_ptr<Tensor>(new ReshapeOp(t, new_dims));                                               \
-});
-    DEF_RESHAPE("reshape");
+    def_tensor_func("reshape", [](std::shared_ptr<Tensor> t, std::vector<size_t> new_dims) {
+        return std::shared_ptr<Tensor>(new ReshapeOp(t, new_dims));
+    });
 
     auto def_binary = [&](const char* name, auto op_func, std::optional<const char*> py_op, bool allow_scalars) {
         auto concat = [](auto p1, auto p2, auto p3) {

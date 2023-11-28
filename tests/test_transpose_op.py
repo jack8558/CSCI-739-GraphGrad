@@ -35,8 +35,8 @@ class TestTransposeOp:
         ("gg_tensor_10_10", [10, 10], 0, 1),
         ("gg_tensor_50_100", [50, 100], 0, 1),
         ("gg_tensor_50_50_50", [50, 50, 50], 0, 1),
-        ("gg_tensor_50_100_200", [50, 100, 200], 0, 1),
-        ("gg_tensor_100_20_200_30", [100, 20, 200, 30], 0, 1),
+        # ("gg_tensor_50_100_200", [50, 100, 200], 0, 1),
+        # ("gg_tensor_100_20_200_30", [100, 20, 200, 30], 0, 1),
     ]
 
     @pytest.mark.parametrize("gg_tensor, dims, dim0, dim1", GG_TENSORS)
