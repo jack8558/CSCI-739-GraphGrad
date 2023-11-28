@@ -49,10 +49,10 @@ class TransposeOp : public Tensor {
             auto& data = this->allocate_data_cpu();
 
             // Transpose the data.
-            if (dims.size() == 2 && dim0 == 0 && dim1 == 1) {
+            if (this->dims.size() == 2 && this->dim0 != this->dim1) {
                 // Special-case 2D matrix transpose for speed.
-                size_t rows = dims[0];
-                size_t cols = dims[1];
+                size_t rows = this->dims[0];
+                size_t cols = this->dims[1];
 
                 #pragma omp parallel for
                 for (size_t i = 0; i < cols; i++) {

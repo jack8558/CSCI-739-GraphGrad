@@ -33,8 +33,8 @@ class TestUnaryOp:
         (lambda gg_tensor: gg_tensor.relu(), torch.nn.functional.relu),
 
         # Binilarize
-        (gg.binilarize, lambda torch_tensor: torch.where(torch_tensor > 0.0, 1.0, 0.0)),
-        (lambda gg_tensor: gg_tensor.binilarize(), lambda torch_tensor: torch.where(torch_tensor > 0.0, 1.0, 0.0)),
+        (gg.binilarize, lambda torch_tensor: 0*torch_tensor + torch.where(torch_tensor > 0.0, 1.0, 0.0)),
+        (lambda gg_tensor: gg_tensor.binilarize(), lambda torch_tensor: 0*torch_tensor + torch.where(torch_tensor > 0.0, 1.0, 0.0)),
 
         # Exponential
         (gg.exp, torch.exp),
@@ -60,30 +60,7 @@ class TestUnaryOp:
         torch_result = torch_func(torch_tensor)
         assert np.isclose(gg_result.to_list(), torch_result, rtol=1e-4).all()
 
-    BACKWARDS_OPS = [
-        # Negation
-        (gg.neg, torch.neg),
-        (lambda gg_tensor: -gg_tensor, torch.neg),
-        (lambda gg_tensor: gg_tensor.neg(), torch.neg),
-
-        # Reciprocal
-        (gg.reciprocal, torch.reciprocal),
-        (lambda gg_tensor: gg_tensor.reciprocal(), torch.reciprocal),
-
-        # ReLU
-        (gg.relu, torch.nn.functional.relu),
-        (lambda gg_tensor: gg_tensor.relu(), torch.nn.functional.relu),
-
-        # Exponential
-        (gg.exp, torch.exp),
-        (lambda gg_tensor: gg_tensor.exp(), torch.exp),
-
-        # Log
-        (gg.log, torch.log),
-        (lambda gg_tensor: gg_tensor.log(), torch.log),
-    ]
-
-    @pytest.mark.parametrize("gg_func, torch_func", BACKWARDS_OPS)
+    @pytest.mark.parametrize("gg_func, torch_func", UNARY_OPS)
     @pytest.mark.parametrize("gg_tensor", GG_TENSORS)
     def test_unary_op_backward(self, gg_tensor, gg_func, torch_func, request):
         gg_tensor = request.getfixturevalue(gg_tensor)
@@ -94,18 +71,3 @@ class TestUnaryOp:
         gg_result.sum().backward()
         torch_result.sum().backward()
         assert np.isclose(gg_tensor.grad.to_list(), torch_tensor.grad, rtol=1e-4).all()
-
-    BACKWARDS_OPS_RAISES = [
-        # Binilarize
-        (gg.binilarize),
-        (lambda gg_tensor: gg_tensor.binilarize()),
-    ]
-
-    @pytest.mark.parametrize("gg_func", BACKWARDS_OPS_RAISES)
-    @pytest.mark.parametrize("gg_tensor", GG_TENSORS)
-    def test_unary_op_backward_raises(self, gg_tensor, gg_func, request):
-        gg_tensor = request.getfixturevalue(gg_tensor)
-        gg_result = gg_func(gg_tensor)
-
-        with pytest.raises(RuntimeError):
-            gg_result.sum().backward()
