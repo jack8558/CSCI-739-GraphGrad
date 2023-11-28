@@ -62,6 +62,31 @@ static std::string to_string(Tensor& t) {
 
 PYBIND11_MODULE(graphgrad, m) {
     m.def("use_gpu", [](bool new_use_gpu) { use_gpu = new_use_gpu; });
+    m.def("set_cuda_device", [](int device) {
+        cudaSetDevice(device);
+        assert_no_cuda_error();
+    });
+    m.def("eval", [](std::shared_ptr<Tensor> t) {
+        // Create a new leaf Tensor and fill its data with the data from t->eval().
+        auto new_t = std::make_shared<Tensor>(t->dims);
+        new_t->on_gpu = t->on_gpu;
+
+        const scalar_t* data = t->eval();
+        size_t data_len = product(t->dims);
+        if (new_t->on_gpu) {
+            CudaArray cuda_array(data_len);
+            cudaMemcpy(cuda_array.ptr, data, data_len * sizeof(scalar_t), cudaMemcpyDefault);
+            assert_no_cuda_error();
+            new_t->data.emplace(std::move(cuda_array));
+        } else {
+            new_t->data.emplace(std::vector<scalar_t>(data, data + data_len));
+        }
+
+        // Clear the CSE cache to free up memory.
+        Tensor::lruMap.clear();
+
+        return new_t;
+    });
 
     auto tensor_class = py::class_<Tensor, std::shared_ptr<Tensor>>(m, "tensor");
     tensor_class
