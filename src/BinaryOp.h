@@ -72,7 +72,10 @@ class BinaryOp : public Tensor {
             case BinaryOpType::MATMUL: {
                 size_t width;
                 size_t cols;
-                if (this->rightChild->dims.size() == 1) {
+                if (this->rightChild->dims.size() == 0) {
+                    width = 1;
+                    cols = 1;
+                } else if (this->rightChild->dims.size() == 1) {
                     width = 1;
                     cols = this->rightChild->dims[0];
                 } else {

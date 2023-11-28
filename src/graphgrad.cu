@@ -103,6 +103,7 @@ PYBIND11_MODULE(graphgrad, m) {
     DEF_BINARY_WITH_OP("mul", MUL, *, "mul");
     DEF_BINARY_WITH_OP("div", DIV, /, "truediv");
     DEF_BINARY("matmul", MATMUL);
+    tensor_class.def("__matmul__", [](std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2) { return matmul(t1, t2); });
     DEF_BINARY("pow", POW);
 
 #define DEF_REDUCTION(name, op_type) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t) { \
