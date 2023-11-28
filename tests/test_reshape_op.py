@@ -52,6 +52,9 @@ class TestReshapeOp:
 
         gg_result = gg_tensor.reshape(dims)
 
-        gg_result.sum().backward()
-        torch_result.sum().backward()
+        gg_rand_grad_factor = gg.rand(gg_result.dims())
+        torch_rand_grad_factor = torch.tensor(gg_rand_grad_factor.to_list(), dtype=torch.float64)
+
+        (gg_result * gg_rand_grad_factor).sum().backward()
+        (torch_result * torch_rand_grad_factor).sum().backward()
         assert np.isclose(gg_tensor.grad.to_list(), torch_tensor.grad, rtol=1e-4).all()
