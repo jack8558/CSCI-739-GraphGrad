@@ -49,6 +49,8 @@ To use GraphGrad with GPU, user needs to set use_gpu True right after GraphGrad 
 ```
 After this, all the tensors will be allocated on the GPU, and operations will be executed on the GPU.
 
+User can also set which GPU to use by `gg.set_cuda_device(index)`. 
+
 ### Ways to construct tensor
 Users can construct the leaf tensor by using following constructors.
 
@@ -82,7 +84,25 @@ GraphGrad uses tensor operations to combine tensors and build graphs. For exampl
 
 Here blue rectangle is shown as leaf tensors and orange circles are representing operators that combines tensors.
 
-NOTE: Since GraphGrad uses lazy evaluation, it does not evaluate until the eval function is called. Because of this, it accumulates the nodes and constructs the graph until eval is called. Due to this reason, if a user tries to build a super big graph and it does not get evaluated in an intermediate step, it might run into a memory error.
+#### Memory managing: 
+Since GraphGrad uses lazy evaluation, it does not evaluate until the eval function is called. Because of this, it accumulates the nodes and constructs the graph until eval is called. Due to this reason, if a user tries to build a super big graph and it does not get evaluated in an intermediate step, it might run into a memory error.
+
+To prevent memory error, it is on user's control to call the function below in appropriate manner.
+
+- gg.eval(tensor1): Forces evaluation of the given tensor and returns a new leaf tensor containing the evaluated data. 
+
+``` py
+param = gg.tensor(...)
+for _ in _:
+    loss = ...
+    loss.backward()
+
+    param = gg.eval(param - lr*param.grad)
+
+```
+
+Using `gg.eval` will let user do training iterations without building a huge graph and running out of memory.
+
 
 
 
@@ -168,7 +188,7 @@ or
 <Tensor: dims=[2], data=[0.000000, 0.693147]>
 
 ```
-- *transpose(dim0, dim1)*: Returns a new tensor that swap dimension of dim0 and dim1.
+- *transpose(dim0, dim1)*: Returns a new tensor that swap dimension of dim0 and dim1. (NOTE: when using GPU, only supports 2D transpose.)
 ``` py
 >>> tensor = gg.tensor([[1,2,3],[4,5,6],[7,8,9]])
 >>> tensor_transpose = tensor.transpose(0,1)
