@@ -38,10 +38,7 @@ def hw3_test1(device):
     tensor_z = gg.tensor(z)
 
     gg_res = tensor_x.matmul(tensor_y).relu().matmul(tensor_z)
-
-    print("GraphGrad result:")
-    print(gg_res)
-    print()
+    str(gg_res)  # force it to evaluate
 
     end = time.perf_counter()
     gg_time = end - start
@@ -54,10 +51,6 @@ def hw3_test1(device):
     tensor_z = torch.tensor(z, dtype=torch.float64).to(device)
 
     torch_res = tensor_x.matmul(tensor_y).relu().matmul(tensor_z).to(device)
-
-    print("Torch result:")
-    print(torch_res)
-    print()
 
     end = time.perf_counter()
     torch_time = end - start
@@ -80,10 +73,7 @@ def hw3_test2(device):
     tensor_z = gg.tensor(z)
 
     gg_res = tensor_x.matmul(tensor_y).relu().matmul(tensor_z)
-
-    print("GraphGrad result:")
-    print(gg_res)
-    print()
+    str(gg_res)  # force it to evaluate
 
     end = time.perf_counter()
     gg_time = end - start
@@ -96,10 +86,6 @@ def hw3_test2(device):
     tensor_z = torch.tensor(z, dtype=torch.float64).to(device)
 
     torch_res = tensor_x.matmul(tensor_y).relu().matmul(tensor_z).to(device)
-
-    print("Torch result:")
-    print(torch_res)
-    print()
 
     end = time.perf_counter()
     torch_time = end - start
@@ -144,9 +130,7 @@ def hw3_test3(device, epochs):
         tensor_z = tensor_z.subtract(grad_tensor_z.mul(gg_lr))
 
     gg_res = out
-    print("GraphGrad result:")
-    print(gg_res)
-    print()
+    str(gg_res)  # force it to evaluate
 
     end = time.perf_counter()
     gg_time = end - start
@@ -173,9 +157,6 @@ def hw3_test3(device, epochs):
         tensor_z = tensor_z.subtract(grad_tensor_z.mul(learning_rate)).to(device)
 
     torch_res = out
-    print("Torch result:")
-    print(torch_res)
-    print()
 
     end = time.perf_counter()
     torch_time = end - start
@@ -210,9 +191,7 @@ def cse_test(device, epochs):
         out += out2.sum()
 
     gg_res = out
-    print("GraphGrad result:")
-    print(gg_res)
-    print()
+    str(gg_res)  # force it to evaluate
 
     end = time.perf_counter()
     gg_time = end - start
@@ -233,9 +212,6 @@ def cse_test(device, epochs):
         out += out2.sum().to(device)
 
     torch_res = out
-    print("Torch result:")
-    print(torch_res)
-    print()
 
     end = time.perf_counter()
     torch_time = end - start
@@ -256,6 +232,8 @@ if __name__ == "__main__":
         gg.use_gpu(True)
         if torch.cuda.is_available():
             device = torch.device("cuda")
+    print('using device:', device)
+    print()
 
 
     print("Starting test 1...")
