@@ -60,6 +60,18 @@ Users can construct the leaf tensor by using following constructors.
 >>> tensor
 <Tensor: dims=[2, 2], data=[1.000000, 2.000000, 3.000000, 4.000000]>
 ```
+- Construct with zero values: pass the dimension as argument and returns tensor with zero values
+``` py
+>>> tensor = gg.rand([2,3])
+>>> tensor
+<Tensor: dims=[2, 3], data=[0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000]>
+```
+- Construct with ones values: pass the dimension as argument and returns tensor with ones values
+``` py
+>>> tensor = gg.rand([2,3])
+>>> tensor
+<Tensor: dims=[2, 3], data=[1.000000, 1.000000, 1.000000, 1.000000, 1.000000, 1.000000]>
+```
 - Construct with random values: pass the dimension as argument and returns tensor with random values
 ``` py
 >>> tensor = gg.rand([2,3])
