@@ -46,6 +46,8 @@ static py::object to_list(Tensor& t) {
 }
 
 PYBIND11_MODULE(graphgrad, m) {
+    m.def("use_gpu", [](bool new_use_gpu) { use_gpu = new_use_gpu; });
+
     auto tensor_class = py::class_<Tensor, std::shared_ptr<Tensor>>(m, "tensor");
     tensor_class
         .def(py::init(&numpy_array_to_tensor))
@@ -126,4 +128,8 @@ PYBIND11_MODULE(graphgrad, m) {
     return std::shared_ptr<Tensor>(new ReductionOp(t, ReductionOpType::op_type));          \
 });
     DEF_REDUCTION("sum", SUM);
+
+    m.add_object("_cleanup", py::capsule([]() {
+        Tensor::lruMap.clear();
+    }));
 }

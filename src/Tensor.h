@@ -203,7 +203,6 @@ class Tensor : public std::enable_shared_from_this<Tensor> {
     // hashValue of tensor
     size_t hashValue;
 
-    protected:
     // Allocate the data buffer for this tensor and return a reference to it.
     // The buffer size is equal to the product of dims.
     // Throws an exception if this tensor already has data allocated.
@@ -216,6 +215,20 @@ class Tensor : public std::enable_shared_from_this<Tensor> {
         }
         this->data.emplace(std::vector<scalar_t>(product(this->dims)));
         return std::get<std::vector<scalar_t>>(*this->data);
+    }
+
+    // Allocate the data buffer for this tensor and return a reference to it.
+    // The buffer size is equal to the product of dims.
+    // Throws an exception if this tensor already has data allocated.
+    CudaArray& allocate_data_gpu() {
+        if (this->data) {
+            throw std::runtime_error("called allocate_data_gpu() on a Tensor with data already allocated");
+        }
+        if (!this->on_gpu) {
+            throw std::runtime_error("called allocate_data_gpu() on a Tensor with on_gpu=false");
+        }
+        this->data.emplace(CudaArray(product(this->dims)));
+        return std::get<CudaArray>(*this->data);
     }
 
     // The Tensor's data buffer.

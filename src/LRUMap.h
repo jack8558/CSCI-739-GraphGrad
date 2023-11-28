@@ -37,6 +37,11 @@ public:
         }
     }
 
+    void clear() {
+        cacheMap.clear();
+        lruList.clear();
+    }
+
 private:
     size_t maxCapacity;
     std::unordered_map<Key, Value> cacheMap;
