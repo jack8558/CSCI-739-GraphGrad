@@ -23,14 +23,13 @@ enum class ReductionOpType {
         if (self->on_gpu) {                                                                   \
             auto& data = self->allocate_data_gpu();                                           \
                                                                                               \
-            kernel_reduction_##__name<<<num_blocks(data.length), BLOCK_SIZE>>>(child_data, data, child_len); \
+            kernel_reduction_##__name<<<num_blocks(child_len), BLOCK_SIZE>>>(child_data, data, child_len); \
         } else {                                                                              \
             auto& data = self->allocate_data_cpu();                                           \
                                                                                               \
             scalar_t tmp = 0.0;                                                               \
             _Pragma("omp parallel for reduction(+:tmp)")                                      \
-            for (size_t i = 0; i < data.size(); i++) {                                        \
-                using std::max, std::exp, std::log;                                           \
+            for (size_t i = 0; i < child_len; i++) {                                          \
                 tmp __expr##= child_data[i];                                                  \
             }                                                                                 \
             data[0] = tmp;                                                                    \
