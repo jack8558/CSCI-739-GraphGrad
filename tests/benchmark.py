@@ -25,7 +25,7 @@ def get_data(M, N, threshold):
     return ret
 
 
-def test1(device):
+def hw3_test1(device):
     x = get_data(3, 5, 0.5)
     y = get_data(5, 7, 0.5)
     z = get_data(7, 1, 0.5)
@@ -67,7 +67,7 @@ def test1(device):
     return gg_res, gg_time, torch_res, torch_time
 
 
-def test2(device):
+def hw3_test2(device):
     x = get_data(300, 5000, 1.0)
     y = get_data(5000, 1000, 1.0)
     z = get_data(1000, 1, 1.0)
@@ -109,7 +109,7 @@ def test2(device):
     return gg_res, gg_time, torch_res, torch_time
 
 
-def test3(device, epochs):
+def hw3_test3(device, epochs):
     N = 1000
     M = 500
     P = 700
@@ -259,25 +259,25 @@ if __name__ == "__main__":
 
 
     print("Starting test 1...")
-    _, gg_time, _, torch_time = test1(device)
+    _, gg_time, _, torch_time = hw3_test1(device)
     print(f"Test 1 finished.\n\tGraphGrad time: {gg_time}\n\tTorch time: {torch_time}")
 
     print("\n=========================\n")
 
     print("Starting test 2...")
-    _, gg_time, _, torch_time = test2(device)
+    _, gg_time, _, torch_time = hw3_test2(device)
     print(f"Test 2 finished.\n\tGraphGrad time: {gg_time}\n\tTorch time: {torch_time}")
 
     print("\n=========================\n")
 
     print("Starting test 3...")
-    _, gg_time, _, torch_time = test3(device, 10)
+    _, gg_time, _, torch_time = hw3_test3(device, 10)
     print(f"Test 3 finished.\n\tGraphGrad time: {gg_time}\n\tTorch time: {torch_time}")
 
     print("\n=========================\n")
 
     print("Starting test 4...")
-    _, gg_time, _, torch_time = test3(device, 100)
+    _, gg_time, _, torch_time = hw3_test3(device, 100)
     print(f"Test 4 finished.\n\tGraphGrad time: {gg_time}\n\tTorch time: {torch_time}")
 
     print("\n=========================\n")

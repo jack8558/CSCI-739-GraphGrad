@@ -8,6 +8,7 @@ namespace py = pybind11;
 #include "Tensor.h"
 #include "ReshapeOp.h"
 #include "utils.h"
+#include "cuda_helpers.h"
 
 enum class BinaryOpType {
     ADD,
@@ -17,6 +18,43 @@ enum class BinaryOpType {
     POW,
     MATMUL,
 };
+
+#define IMPL_POINTWISE_BINARY_OP(__name, __expr)                                              \
+    __global__ void kernel_binary_##__name(const scalar_t* left, const scalar_t* right, CudaArrayRef out) {  \
+        size_t index = (blockIdx.x * blockDim.x) + threadIdx.x;                               \
+                                                                                              \
+        if (index < out.length) {                                                             \
+            scalar_t a = left[index];                                                         \
+            scalar_t b = right[index];                                                        \
+            out.ptr[index] = (__expr);                                                        \
+        }                                                                                     \
+    }                                                                                         \
+                                                                                              \
+    inline void binary_compute_data_##__name(Tensor* self, const scalar_t* left, const scalar_t* right) {   \
+        if (self->on_gpu) {                                                                   \
+            auto& data = self->allocate_data_gpu();                                           \
+                                                                                              \
+            kernel_binary_##__name<<<num_blocks(data.length), BLOCK_SIZE>>>(left, right, data);        \
+        } else {                                                                              \
+            auto& data = self->allocate_data_cpu();                                           \
+                                                                                              \
+            _Pragma("omp parallel for")                                                       \
+            for (size_t i = 0; i < data.size(); i++) {                                        \
+                using std::pow;                                                               \
+                scalar_t a = left[i];                                                         \
+                scalar_t b = right[i];                                                        \
+                data[i] = (__expr);                                                           \
+            }                                                                                 \
+        }                                                                                     \
+    }
+
+IMPL_POINTWISE_BINARY_OP(add, a + b)
+IMPL_POINTWISE_BINARY_OP(sub, a - b)
+IMPL_POINTWISE_BINARY_OP(mul, a * b)
+IMPL_POINTWISE_BINARY_OP(div, a / b)
+IMPL_POINTWISE_BINARY_OP(pow, pow(a, b))
+
+#undef IMPL_POINTWISE_BINARY_OP
 
 class BinaryOp : public Tensor {
    public:
@@ -41,37 +79,29 @@ class BinaryOp : public Tensor {
         const scalar_t* left_child_data = this->leftChild->eval();
         const scalar_t* right_child_data = this->rightChild->eval();
 
-        // Allocate the data buffer.
-        auto& data = this->allocate_data_cpu();
-
         // Get a function to compute each value.
-        scalar_t (*scalar_func)(scalar_t, scalar_t);
+        // scalar_t (*scalar_func)(scalar_t, scalar_t);
         switch (this->op_type) {
             case BinaryOpType::ADD:
-                scalar_func = [](scalar_t x, scalar_t y) { return x + y; };
+                binary_compute_data_add(this, left_child_data, right_child_data);
                 break;
             case BinaryOpType::SUB:
-                scalar_func = [](scalar_t x, scalar_t y) { return x - y; };
+                binary_compute_data_sub(this, left_child_data, right_child_data);
                 break;
             case BinaryOpType::MUL:
-                scalar_func = [](scalar_t x, scalar_t y) { return x * y; };
+                binary_compute_data_mul(this, left_child_data, right_child_data);
                 break;
             case BinaryOpType::DIV:
-                scalar_func = [](scalar_t x, scalar_t y) { return x / y; };
+                binary_compute_data_div(this, left_child_data, right_child_data);
                 break;
             case BinaryOpType::POW:
-                scalar_func = [](scalar_t x, scalar_t y) { return std::pow(x, y); };
+                binary_compute_data_pow(this, left_child_data, right_child_data);
                 break;
             case BinaryOpType::MATMUL:
+            {
+                // Allocate the data buffer.
+                auto& data = this->allocate_data_cpu();
                 // MATMUL doesn't use a scalar_func.
-                break;
-            default:
-                throw std::domain_error("bad op_type");
-        }
-
-        // Fill the buffer with computed values.
-        switch (this->op_type) {
-            case BinaryOpType::MATMUL: {
                 assert(this->leftChild->dims.size() == 2);
                 assert(this->rightChild->dims.size() == 2);
                 assert(this->leftChild->dims[1] == this->rightChild->dims[0]);
@@ -102,23 +132,31 @@ class BinaryOp : public Tensor {
                     }
                     data[i] = sum;
                 }
-
                 break;
             }
-
-            default: {
-                #pragma omp parallel for
-                for (size_t i = 0; i < data.size(); i++) {
-                    if (product(leftChild->dims) == 1) {
-                        data[i] = scalar_func(left_child_data[0], right_child_data[i]);
-                    } else if (product(rightChild->dims) == 1) {
-                        data[i] = scalar_func(left_child_data[i], right_child_data[0]);
-                    } else {
-                        data[i] = scalar_func(left_child_data[i], right_child_data[i]);
-                    }
-                }
-            }
+            default:
+                throw std::domain_error("bad op_type");
         }
+
+        // Fill the buffer with computed values.
+        // switch (this->op_type) {
+        //     case BinaryOpType::MATMUL: {
+                
+        //     }
+
+        //     default: {
+        //         #pragma omp parallel for
+        //         for (size_t i = 0; i < data.size(); i++) {
+        //             if (product(leftChild->dims) == 1) {
+        //                 data[i] = scalar_func(left_child_data[0], right_child_data[i]);
+        //             } else if (product(rightChild->dims) == 1) {
+        //                 data[i] = scalar_func(left_child_data[i], right_child_data[0]);
+        //             } else {
+        //                 data[i] = scalar_func(left_child_data[i], right_child_data[i]);
+        //             }
+        //         }
+        //     }
+        // }
     }
 
     std::vector<Tensor*> get_children() override {
