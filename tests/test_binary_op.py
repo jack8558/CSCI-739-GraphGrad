@@ -219,10 +219,6 @@ class TestBinaryOP:
 
         gg_result.sum().backward()
         torch_result.sum().backward()
-        print("gg_left", gg_left.grad)
-        print("gg_right", gg_right.grad)
-        print("gg_left_tensor", torch_left.grad)
-        print("gg_right_tensor", torch_right.grad)
         assert np.isclose(gg_left.grad.to_list(), torch_left.grad, rtol=1e-4).all()
         assert np.isclose(gg_right.grad.to_list(), torch_right.grad, rtol=1e-4).all()
 
