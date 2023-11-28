@@ -12,6 +12,20 @@ sys.path.append(parent_dir)
 import graphgrad as gg
 
 
+def pytest_addoption(parser):
+    parser.addoption("--use_gpu", action="store_true")
+
+
+def pytest_sessionstart(session):
+    """
+    Called after the Session object has been created and
+    before performing collection and entering the run test loop.
+    """
+    gpu = session.config.getoption("use_gpu")
+    print("use_gpu:", gpu)
+    gg.use_gpu(gpu)
+
+
 @pytest.fixture(scope="session")
 def gg_tensor_5_10():
     return gg.rand([5, 10])

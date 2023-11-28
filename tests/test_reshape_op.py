@@ -45,10 +45,7 @@ class TestReshapeOp:
 
         torch_tensor = torch.tensor(gg_tensor.to_list(), dtype=torch.float64)
         torch_tensor.requires_grad = True
-        print(torch_tensor.shape)
         torch_result = torch.reshape(torch_tensor, tuple(dims))
-
-        print(torch_result.shape)
 
         gg_result = gg_tensor.reshape(dims)
 

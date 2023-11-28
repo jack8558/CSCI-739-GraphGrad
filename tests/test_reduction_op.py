@@ -14,7 +14,7 @@ import graphgrad as gg
 import numpy as np
 
 
-class TestUnaryOp:
+class TestReductionOp:
     # The different unary ops to test.
     # Each item is a tuple of (GraphGrad op, equivalent PyTorch op).
     # Each op has tests for all ways to call it from graphgrad to verify correct pybind setup
@@ -32,10 +32,11 @@ class TestUnaryOp:
 
     @pytest.mark.parametrize("gg_func, torch_func", UNARY_OPS)
     @pytest.mark.parametrize("gg_tensor", GG_TENSORS)
-    def test_unary_op(self, gg_tensor, gg_func, torch_func, request):
+    def test_reduction_op(self, gg_tensor, gg_func, torch_func, request):
         gg_tensor = request.getfixturevalue(gg_tensor)
         gg_result = gg_func(gg_tensor)
-        torch_tensor = torch.tensor(gg_tensor.to_list(), dtype=torch.float64)
+        torch_tensor = torch.tensor(gg_tensor.to_list())
         torch_result = torch_func(torch_tensor)
+        assert np.isclose(gg_tensor.to_list(), torch_tensor, rtol=1e-4).all()
         assert gg_result.dims() == []
-        assert np.isclose(gg_result.to_list(), torch_result, rtol=1e-4).all()
+        assert np.isclose(gg.sum(gg_tensor).to_list(), torch_result, rtol=1e-4).all()
