@@ -59,8 +59,20 @@ void Tensor::backward() {
 void Tensor::add_grad(std::shared_ptr<Tensor> grad) {
     if (this->grad) {
         this->grad = this->grad + grad;
+    } else if (grad->dims != this->dims) {
+        // Add zeros to broadcast grad to the correct dims.
+        this->grad = Tensor::zeros(this->dims) + grad;
     } else {
         this->grad = std::move(grad);
+    }
+
+    // Verify that this->grad->dims == this->dims.
+    if (this->grad->dims != this->dims) {
+        std::string error_message = "this->grad->dims=";
+        error_message += vector_to_string(this->grad->dims);
+        error_message += " doesn't match this->dims=";
+        error_message += vector_to_string(this->dims);
+        throw std::logic_error(error_message);
     }
 }
 
@@ -70,7 +82,7 @@ void UnaryOp::backward_step() {
     using namespace gg;
     switch (this->op_type) {
         case UnaryOpType::NEG:
-            this->child->add_grad(-this->grad * Tensor::ones(this->child->dims));
+            this->child->add_grad(-this->grad);
             break;
         case UnaryOpType::RECIP:
             this->child->add_grad(this->grad * -pow(this->child, Tensor::from_scalar(-2.0)));
@@ -79,7 +91,7 @@ void UnaryOp::backward_step() {
             this->child->add_grad(this->grad * binilarize(this->child));
             break;
         case UnaryOpType::BIN:
-            throw std::runtime_error("UnaryOp::backward_step cannot compute gradient for comparison binilarize()");
+            this->child->add_grad(Tensor::zeros(this->child->dims));
             break;
         case UnaryOpType::EXP:
             this->child->add_grad(this->grad * shared_from_this());
@@ -97,28 +109,28 @@ void BinaryOp::backward_step() {
     switch (this->op_type) {
         case BinaryOpType::ADD:
             if (product(this->leftChild->dims) > 1) {
-                this->leftChild->add_grad(this->grad + Tensor::zeros(this->leftChild->dims));
+                this->leftChild->add_grad(this->grad);
             } else {
-                this->leftChild->add_grad(sum(this->grad + Tensor::zeros(this->rightChild->dims)));
+                this->leftChild->add_grad(sum(this->grad));
             }
 
             if (product(this->rightChild->dims) > 1) {
-                this->rightChild->add_grad(this->grad + Tensor::zeros(this->rightChild->dims));
+                this->rightChild->add_grad(this->grad);
             } else {
-                this->rightChild->add_grad(sum(this->grad + Tensor::zeros(this->leftChild->dims)));
+                this->rightChild->add_grad(sum(this->grad));
             }
             break;
         case BinaryOpType::SUB:
             if (product(this->leftChild->dims) > 1) {
-                this->leftChild->add_grad(this->grad + Tensor::zeros(this->leftChild->dims));
+                this->leftChild->add_grad(this->grad);
             } else {
-                this->leftChild->add_grad(sum(this->grad + Tensor::zeros(this->rightChild->dims)));
+                this->leftChild->add_grad(sum(this->grad));
             }
 
             if (product(this->rightChild->dims) > 1) {
-                this->rightChild->add_grad(-this->grad + Tensor::zeros(this->rightChild->dims));
+                this->rightChild->add_grad(-this->grad);
             } else {
-                this->rightChild->add_grad(sum(-this->grad + Tensor::zeros(this->leftChild->dims)));
+                this->rightChild->add_grad(sum(-this->grad));
             }
             break;
         case BinaryOpType::MUL:
@@ -129,35 +141,21 @@ void BinaryOp::backward_step() {
             }
 
             if (product(this->rightChild->dims) > 1) {
-                this->rightChild->add_grad(this->grad * this->leftChild * Tensor::ones(this->rightChild->dims));
+                this->rightChild->add_grad(this->grad * this->leftChild);
             } else {
                 this->rightChild->add_grad(sum(this->grad * this->leftChild));
             }
             break;
         case BinaryOpType::MATMUL:
-            // For matmul, it is eiter 1D * 2D or 2D * 2D
-            if (this->leftChild->dims.size() == 1) {
-                this->rightChild->add_grad(matmul(transpose(this->leftChild, 0, 0), this->grad * Tensor::ones(this->dims)));
-            } else {
-                if (product(this->rightChild->dims) > 1) {
-                    this->rightChild->add_grad(matmul(transpose(this->leftChild, 0, 1), this->grad * Tensor::ones(this->dims)));
-                } else {
-                    this->rightChild->add_grad(sum(this->grad * this->leftChild));
-                }
-            }
-
-            if (this->rightChild->dims.size() == 1) {
-                this->leftChild->add_grad(matmul(this->grad * Tensor::ones(this->dims), transpose(this->rightChild, 0, 0)));
-            } else {
-                this->leftChild->add_grad(matmul(this->grad * Tensor::ones(this->dims), transpose(this->rightChild, 0, 1)));
-            }
+            this->leftChild->add_grad(matmul(this->grad, transpose(this->rightChild, 0, 1)));
+            this->rightChild->add_grad(matmul(transpose(this->leftChild, 0, 1), this->grad));
             break;
         case BinaryOpType::POW:
             // x^n -> n*x^(n-1)
             if (product(this->leftChild->dims) > 1) {
-                this->leftChild->add_grad(this->grad * this->rightChild * pow(this->leftChild, (this->rightChild - Tensor::ones(this->rightChild->dims))));
+                this->leftChild->add_grad(this->grad * this->rightChild * pow(this->leftChild, this->rightChild - Tensor::from_scalar(1.0)));
             } else {
-                this->leftChild->add_grad(sum(this->grad * this->rightChild * pow(this->leftChild, (this->rightChild - Tensor::ones(this->rightChild->dims)))));
+                this->leftChild->add_grad(sum(this->grad * this->rightChild * pow(this->leftChild, this->rightChild - Tensor::from_scalar(1.0))));
             }
 
             // a^x -> ln(a) a^x
@@ -169,15 +167,15 @@ void BinaryOp::backward_step() {
             break;
         case BinaryOpType::DIV:
             if (product(this->leftChild->dims) > 1) {
-                this->leftChild->add_grad((this->grad * this->rightChild) * pow(this->rightChild, Tensor::from_scalar(-2.0)));
+                this->leftChild->add_grad(this->grad / this->rightChild);
             } else {
-                this->leftChild->add_grad(sum(this->grad * this->rightChild * pow(this->rightChild, Tensor::from_scalar(-2.0))));
+                this->leftChild->add_grad(sum(this->grad / this->rightChild));
             }
 
             if (product(this->rightChild->dims) > 1) {
-                this->rightChild->add_grad((-this->grad * this->leftChild * Tensor::ones(this->rightChild->dims)) * pow(this->rightChild, Tensor::from_scalar(-2.0)));
+                this->rightChild->add_grad(this->grad * this->leftChild * -pow(this->rightChild, Tensor::from_scalar(-2.0)));
             } else {
-                this->rightChild->add_grad(sum(-this->grad * this->leftChild * pow(this->rightChild, Tensor::from_scalar(-2.0))));
+                this->rightChild->add_grad(sum(this->grad * this->leftChild * -pow(this->rightChild, Tensor::from_scalar(-2.0))));
             }
             break;
         default:
@@ -196,7 +194,8 @@ void TransposeOp::backward_step() {
 void ReductionOp::backward_step() {
     switch (this->op_type) {
         case ReductionOpType::SUM:
-            this->child->add_grad(sum(this->grad));
+            // this->grad is a scalar; add that scalar to every element of this->child->grad.
+            this->child->add_grad(this->grad);
             break;
 
         default:

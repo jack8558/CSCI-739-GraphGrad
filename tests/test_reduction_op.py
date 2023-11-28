@@ -37,5 +37,5 @@ class TestUnaryOp:
         gg_result = gg_func(gg_tensor)
         torch_tensor = torch.tensor(gg_tensor.to_list(), dtype=torch.float64)
         torch_result = torch_func(torch_tensor)
-        assert gg_result.dims() == [1]
+        assert gg_result.dims() == []
         assert np.isclose(gg_result.to_list(), torch_result, rtol=1e-4).all()

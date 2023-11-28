@@ -199,27 +199,14 @@ class TestBinaryOP:
         torch_right = to_torch_tensor(gg_right)
         torch_result = torch.matmul(torch_left, torch_right)
 
-        gg_result = gg.matmul(gg_left, gg_right)
-        if list(torch_result.size()) == []:
-            assert gg_result.dims() == [1]
-        else:
+        for matmul_func in [gg.matmul, lambda a, b: a.matmul(b), lambda a, b: a @ b]:
+            gg_result = matmul_func(gg_left, gg_right)
             assert gg_result.dims() == list(torch_result.size())
-        assert np.isclose(
-            gg_result.to_list(),
-            torch_result,
-            rtol=1e-4,
-        ).all()
-
-        gg_result = gg_left.matmul(gg_right)
-        if list(torch_result.size()) == []:
-            assert gg_result.dims() == [1]
-        else:
-            assert gg_result.dims() == list(torch_result.size())
-        assert np.isclose(
-            gg_result.to_list(),
-            torch_result,
-            rtol=1e-4,
-        ).all()
+            assert np.isclose(
+                gg_result.to_list(),
+                torch_result,
+                rtol=1e-4,
+            ).all()
 
     @pytest.mark.parametrize("gg_left, gg_right", MATMUL_INPUTS)
     def test_matmul_backward(self, gg_left, gg_right, request):
