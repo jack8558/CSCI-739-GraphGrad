@@ -12,7 +12,11 @@ class ReshapeOp : public Tensor {
     ReshapeOp(std::shared_ptr<Tensor> arg, std::vector<size_t> new_dims)
         : Tensor(new_dims), child(arg)  {
             if (product(arg->dims) != product(new_dims)) {
-                throw std::invalid_argument("Mismatched dims in reshape");
+                std::string error_message = "mismatched dims in reshape: arg.dims=";
+                error_message += vector_to_string(arg->dims);
+                error_message += ", new_dims=";
+                error_message += vector_to_string(new_dims);
+                throw py::value_error(error_message);
             }
             this->on_gpu = arg->on_gpu;
             this->hashValue = tensor_hash();

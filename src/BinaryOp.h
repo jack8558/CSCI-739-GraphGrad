@@ -6,6 +6,7 @@ namespace py = pybind11;
 #include <memory>
 
 #include "Tensor.h"
+#include "ReshapeOp.h"
 #include "utils.h"
 
 enum class BinaryOpType {
@@ -71,18 +72,12 @@ class BinaryOp : public Tensor {
         // Fill the buffer with computed values.
         switch (this->op_type) {
             case BinaryOpType::MATMUL: {
-                size_t width;
-                size_t cols;
-                if (this->rightChild->dims.size() == 0) {
-                    width = 1;
-                    cols = 1;
-                } else if (this->rightChild->dims.size() == 1) {
-                    width = 1;
-                    cols = this->rightChild->dims[0];
-                } else {
-                    width = this->rightChild->dims[0];
-                    cols = this->rightChild->dims[1];
-                }
+                assert(this->leftChild->dims.size() == 2);
+                assert(this->rightChild->dims.size() == 2);
+                assert(this->leftChild->dims[1] == this->rightChild->dims[0]);
+
+                size_t width = this->rightChild->dims[0];
+                size_t cols = this->rightChild->dims[1];
 
                 // Make a temporary transposed copy of the right child's data so that the memory
                 // accesses in the tight inner loop are more cache-friendly.
@@ -136,27 +131,10 @@ class BinaryOp : public Tensor {
     static std::vector<size_t> verify_and_get_dims(const Tensor& left, const Tensor& right, BinaryOpType op_type) {
         switch (op_type) {
             case BinaryOpType::MATMUL:
-                if (product(left.dims) == 1 && product(right.dims) == 1) {
-                    if (left.dims.size() == 1 && right.dims.size() == 1) {
-                        return std::vector<size_t>{1};
-                    } else if (left.dims.size() == 2 && right.dims.size() == 2) {
-                        return std::vector<size_t>{1, 1};
-                    }
-                    return std::vector<size_t>{1};
-                } else if (left.dims.size() <= 1 && right.dims.size() <= 1) {
-                    if (left.dims[0] <= right.dims[0]) {
-                        return std::vector<size_t>{right.dims[0]};
-                    } else {
-                        return std::vector<size_t>{left.dims[0]};
-                    }
-                } else if ((left.dims.size() == 1 && right.dims.size() == 2) && (left.dims[0] == right.dims[0])) {
-                    return std::vector<size_t>{right.dims[1]};
-                } else if ((left.dims.size() == 2 && right.dims.size() == 1) && (left.dims[1] == right.dims[0])) {
-                    return std::vector<size_t>{left.dims[0]};
-                } else if ((left.dims.size() == 2 && right.dims.size() == 2) && left.dims[1] == right.dims[0]) {
-                    return std::vector<size_t>{left.dims[0], right.dims[1]};
+                if (left.dims.size() == 2 && right.dims.size() == 2 && left.dims[1] == right.dims[0]) {
+                    return {left.dims[0], right.dims[1]};
                 } else {
-                    std::string error_message = "invalid matmul dims: left.dims=";
+                    std::string error_message = "invalid dims for BinaryOpType::MATMUL: left.dims=";
                     error_message += vector_to_string(left.dims);
                     error_message += ", right.dims=";
                     error_message += vector_to_string(right.dims);
@@ -164,13 +142,21 @@ class BinaryOp : public Tensor {
                 }
 
             default:
-                if (left.dims != right.dims && product(left.dims) != 1 && product(right.dims) != 1) {
+                bool is_left_scalar = product(left.dims) == 1;
+                bool is_right_scalar = product(right.dims) == 1;
+                if (left.dims != right.dims && !is_left_scalar && !is_right_scalar) {
                     std::string error_message = "binary op dims mismatch: left.dims=";
                     error_message += vector_to_string(left.dims);
                     error_message += ", right.dims=";
                     error_message += vector_to_string(right.dims);
                     throw py::value_error(error_message);
-                } else if (product(left.dims) == 1) {
+                } else if (is_left_scalar && is_right_scalar) {
+                    if (left.dims.size() > right.dims.size()) {
+                        return left.dims;
+                    } else {
+                        return right.dims;
+                    }
+                } else if (is_left_scalar) {
                     return right.dims;
                 } else {
                     return left.dims;
@@ -201,17 +187,51 @@ IMPL_OPERATOR_OVERLOAD(/, DIV)
 
 namespace gg {
 
-#define IMPL_OP_FUNC(func_name, op_type)                                                                     \
-    inline static std::shared_ptr<Tensor> func_name(std::shared_ptr<Tensor> t, std::shared_ptr<Tensor> t2) { \
-        return std::shared_ptr<Tensor>(new BinaryOp(t, t2, BinaryOpType::op_type));                          \
+#define IMPL_OP_FUNC(func_name, op_type)                                                                      \
+    inline static std::shared_ptr<Tensor> func_name(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2) { \
+        return std::shared_ptr<Tensor>(new BinaryOp(t1, t2, BinaryOpType::op_type));                          \
     }
 
 IMPL_OP_FUNC(add, ADD)
 IMPL_OP_FUNC(subtract, SUB)
 IMPL_OP_FUNC(mul, MUL)
-IMPL_OP_FUNC(matmul, MATMUL)
-IMPL_OP_FUNC(pow, POW)
 IMPL_OP_FUNC(div, DIV)
+IMPL_OP_FUNC(pow, POW)
+
+inline static std::shared_ptr<Tensor> matmul(std::shared_ptr<Tensor> left, std::shared_ptr<Tensor> right) {
+    // Reshape left and right into 2D matrices, as needed.
+    bool squeeze_left = false, squeeze_right = false;
+    if (left->dims.size() == 1) {
+        size_t d = left->dims[0];
+        left = reshape(left, {1, d});
+        squeeze_left = true;
+    }
+    if (right->dims.size() == 1) {
+        size_t d = right->dims[0];
+        right = reshape(right, {d, 1});
+        squeeze_right = true;
+    }
+
+    // Assert correct 2D*2D matmul dimensions.
+    if (!(left->dims.size() == 2 && right->dims.size() == 2 && left->dims[1] == right->dims[0])) {
+        std::string error_message = "invalid matmul dims: left.dims=";
+        error_message += vector_to_string(left->dims);
+        error_message += ", right.dims=";
+        error_message += vector_to_string(right->dims);
+        throw py::value_error(error_message);
+    }
+
+    auto result = std::shared_ptr<Tensor>(new BinaryOp(left, right, BinaryOpType::MATMUL));
+    if (squeeze_left && squeeze_right) {
+        return reshape(result, {});
+    } else if (squeeze_left) {
+        return reshape(result, {result->dims[1]});
+    } else if (squeeze_right) {
+        return reshape(result, {result->dims[0]});
+    } else {
+        return result;
+    }
+}
 
 }
 

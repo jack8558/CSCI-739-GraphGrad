@@ -59,6 +59,9 @@ void Tensor::backward() {
 void Tensor::add_grad(std::shared_ptr<Tensor> grad) {
     if (this->grad) {
         this->grad = this->grad + grad;
+    } else if (grad->dims != this->dims) {
+        // Add zeros to broadcast grad to the correct dims.
+        this->grad = Tensor::zeros(this->dims) + grad;
     } else {
         this->grad = std::move(grad);
     }
@@ -135,22 +138,8 @@ void BinaryOp::backward_step() {
             }
             break;
         case BinaryOpType::MATMUL:
-            // For matmul, it is eiter 1D * 2D or 2D * 2D
-            if (this->leftChild->dims.size() == 1) {
-                this->rightChild->add_grad(matmul(transpose(this->leftChild, 0, 0), this->grad * Tensor::ones(this->dims)));
-            } else {
-                if (product(this->rightChild->dims) > 1) {
-                    this->rightChild->add_grad(matmul(transpose(this->leftChild, 0, 1), this->grad * Tensor::ones(this->dims)));
-                } else {
-                    this->rightChild->add_grad(sum(this->grad * this->leftChild));
-                }
-            }
-
-            if (this->rightChild->dims.size() == 1) {
-                this->leftChild->add_grad(matmul(this->grad * Tensor::ones(this->dims), transpose(this->rightChild, 0, 0)));
-            } else {
-                this->leftChild->add_grad(matmul(this->grad * Tensor::ones(this->dims), transpose(this->rightChild, 0, 1)));
-            }
+            this->leftChild->add_grad(matmul(this->grad, transpose(this->rightChild, 0, 1)));
+            this->rightChild->add_grad(matmul(transpose(this->leftChild, 0, 1), this->grad));
             break;
         case BinaryOpType::POW:
             // x^n -> n*x^(n-1)
@@ -196,7 +185,8 @@ void TransposeOp::backward_step() {
 void ReductionOp::backward_step() {
     switch (this->op_type) {
         case ReductionOpType::SUM:
-            this->child->add_grad(sum(this->grad));
+            // this->grad is a scalar; add that scalar to every element of this->child->grad.
+            this->child->add_grad(this->grad);
             break;
 
         default:
