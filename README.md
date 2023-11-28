@@ -330,8 +330,12 @@ Pytorch has been chosen to be a benchmark and below is the comparision with Grap
 ### Running
 To run the benchmark test, run. To see detail of what is being compared, check tests/benchmark.py.
 
-```
+``` shell
+-- Run with CPU
 python tests/benchmark.py
+
+-- Run with GPU
+python tests/benchmark.py -use_gpu
 ```
 
 Below are the reusult of benchmark when ran in following machine spec.
@@ -340,6 +344,7 @@ Below are the reusult of benchmark when ran in following machine spec.
 - Intel(R) Xeon(R) CPU E5-2650 v4 @ 2.20GHz
 - 48 threads in total (2 sockets, 12 cores per socket, 2 threads per core)
 - 251 GB memory
+- GPU: Tesla P4
 
 ### Result CPU
 
@@ -363,14 +368,44 @@ Test 4:
     GraphGrad time: 8.042721451027319
     Torch time: 0.719514610930346
 
-Test 5 (Case when there are multiple common subexpression):
+Test 5 (Special case when there are multiple common subexpression):
 
     GraphGrad time: 0.06286677299067378
     Torch time: 1.233367821900174
 
-For a very simple case (test1), GraphGrad takes longer than torch. For other larger cases, torch is approximately 10 times faster than GraphGrad. This is a good result considering PyTorch has multiple other optimizations installed internally. In cases where there are many common subexpressions, GraphGrad outperforms PyTorch.
+For a very simple case (test1), GraphGrad takes longer than torch. For other larger cases, torch is approximately 10 times faster than GraphGrad. This is a good result considering PyTorch has multiple other optimizations installed internally. 
+
+Test5 is a special case where there are many common subexpressions, and GraphGrad outperforms PyTorch. This example proves that CSE is working as expected since common expression is not being computed again.
 
 ### Result GPU
+Test 1 finished.
+
+    GraphGrad time: 1.4520762789761648
+    Torch time: 0.7352663649944589
+
+Test 2 finished.
+
+    GraphGrad time: 0.13476406293921173
+    Torch time: 0.019834927981719375
+
+Test 3 finished.
+
+    GraphGrad time: 0.2010022649774328
+    Torch time: 0.0070169949904084206
+
+Test 4 finished.
+
+    GraphGrad time: 2.1655370260123163
+    Torch time: 0.482791246031411
+
+Test 5 finished.
+
+        GraphGrad time: 0.35613198298960924
+        Torch time: 4.835883064079098
+
+When using GPU for both GraphGrad and torch, GraphGrad was ~4 times slower than pytorch. This result is quite impressive comapred to highly used library like pytroch. For special case in test5, GraphGrad still performs better than pytorch.
+
+
 
 
 
