@@ -20,29 +20,49 @@ enum class BinaryOpType {
 };
 
 #define IMPL_POINTWISE_BINARY_OP(__name, __expr)                                              \
-    __global__ void kernel_binary_##__name(const scalar_t* left, const scalar_t* right, CudaArrayRef out) {  \
+    __global__ void kernel_binary_##__name(const scalar_t* left, const scalar_t* right, CudaArrayRef out,  \
+                                           size_t left_len, size_t right_len) {               \
         size_t index = (blockIdx.x * blockDim.x) + threadIdx.x;                               \
                                                                                               \
         if (index < out.length) {                                                             \
-            scalar_t a = left[index];                                                         \
-            scalar_t b = right[index];                                                        \
+            scalar_t a;                                                                       \
+                if (left_len == 1)                                                            \
+                    a = left[0];                                                              \
+                else                                                                          \
+                    a = left[index];                                                          \
+                                                                                              \
+                scalar_t b;                                                                   \
+                if (right_len == 1)                                                           \
+                    b = right[0];                                                             \
+                else                                                                          \
+                    b = right[index];                                                         \
             out.ptr[index] = (__expr);                                                        \
         }                                                                                     \
     }                                                                                         \
                                                                                               \
-    inline void binary_compute_data_##__name(Tensor* self, const scalar_t* left, const scalar_t* right) {   \
+    inline void binary_compute_data_##__name(Tensor* self, const scalar_t* left, const scalar_t* right,  \
+                                            size_t left_len, size_t right_len) {              \
         if (self->on_gpu) {                                                                   \
             auto& data = self->allocate_data_gpu();                                           \
                                                                                               \
-            kernel_binary_##__name<<<num_blocks(data.length), BLOCK_SIZE>>>(left, right, data);        \
+            kernel_binary_##__name<<<num_blocks(data.length), BLOCK_SIZE>>>(left, right, data, left_len, right_len);  \
         } else {                                                                              \
             auto& data = self->allocate_data_cpu();                                           \
                                                                                               \
             _Pragma("omp parallel for")                                                       \
             for (size_t i = 0; i < data.size(); i++) {                                        \
                 using std::pow;                                                               \
-                scalar_t a = left[i];                                                         \
-                scalar_t b = right[i];                                                        \
+                scalar_t a;                                                                   \
+                if (left_len == 1)                                                            \
+                    a = left[0];                                                              \
+                else                                                                          \
+                    a = left[i];                                                              \
+                                                                                              \
+                scalar_t b;                                                                   \
+                if (right_len == 1)                                                           \
+                    b = right[0];                                                             \
+                else                                                                          \
+                    b = right[i];                                                             \
                 data[i] = (__expr);                                                           \
             }                                                                                 \
         }                                                                                     \
@@ -78,24 +98,26 @@ class BinaryOp : public Tensor {
         // Evaluate the child nodes and get their data.
         const scalar_t* left_child_data = this->leftChild->eval();
         const scalar_t* right_child_data = this->rightChild->eval();
+        size_t left_size = product(this->leftChild->dims);
+        size_t right_size = product(this->rightChild->dims);
 
         // Get a function to compute each value.
         // scalar_t (*scalar_func)(scalar_t, scalar_t);
         switch (this->op_type) {
             case BinaryOpType::ADD:
-                binary_compute_data_add(this, left_child_data, right_child_data);
+                binary_compute_data_add(this, left_child_data, right_child_data, left_size, right_size);
                 break;
             case BinaryOpType::SUB:
-                binary_compute_data_sub(this, left_child_data, right_child_data);
+                binary_compute_data_sub(this, left_child_data, right_child_data, left_size, right_size);
                 break;
             case BinaryOpType::MUL:
-                binary_compute_data_mul(this, left_child_data, right_child_data);
+                binary_compute_data_mul(this, left_child_data, right_child_data, left_size, right_size);
                 break;
             case BinaryOpType::DIV:
-                binary_compute_data_div(this, left_child_data, right_child_data);
+                binary_compute_data_div(this, left_child_data, right_child_data, left_size, right_size);
                 break;
             case BinaryOpType::POW:
-                binary_compute_data_pow(this, left_child_data, right_child_data);
+                binary_compute_data_pow(this, left_child_data, right_child_data, left_size, right_size);
                 break;
             case BinaryOpType::MATMUL:
             {
