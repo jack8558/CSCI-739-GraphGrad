@@ -144,6 +144,7 @@ class Tensor : public std::enable_shared_from_this<Tensor> {
             auto result = Tensor::lruMap.get(this->hashValue);
             if (result.has_value()) {
                 // The key was found
+                assert((*result)->dims == this->dims);
                 return (*result)->eval();
             }
 
@@ -194,7 +195,7 @@ class Tensor : public std::enable_shared_from_this<Tensor> {
     std::shared_ptr<Tensor> grad = nullptr;
 
     // Static hashmap for common subextpression. Removes least used element if exceeds capacity.
-    inline static LRUMap<size_t, std::shared_ptr<Tensor>> lruMap{1000};
+    inline static LRUMap<size_t, std::shared_ptr<Tensor>> lruMap{200};
 
     // hashValue of tensor
     size_t hashValue;

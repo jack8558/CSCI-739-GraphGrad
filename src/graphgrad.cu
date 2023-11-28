@@ -82,10 +82,10 @@ PYBIND11_MODULE(graphgrad, m) {
             new_t->data.emplace(std::vector<scalar_t>(data, data + data_len));
         }
 
-        // Clear the CSE cache to free up memory.
-        Tensor::lruMap.clear();
-
         return new_t;
+    });
+    m.def("clear_cache", []() {
+        Tensor::lruMap.clear();
     });
 
     auto tensor_class = py::class_<Tensor, std::shared_ptr<Tensor>>(m, "tensor");
