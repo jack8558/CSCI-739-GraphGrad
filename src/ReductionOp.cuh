@@ -12,18 +12,18 @@ enum class ReductionOpType {
 
 
 __global__ void kernel_reduction_sum(const scalar_t* in, CudaArrayRef out, size_t child_len) {
-    size_t index = (blockIdx.x * blockDim.x) + threadIdx.x;
-
-    if (index < child_len) {
-        atomicAdd(out.ptr, in[index]);
+    scalar_t sum = 0.0;
+    for (unsigned long i = 0; i < child_len; i++) {
+        sum += in[i];
     }
+    *out.ptr = sum;
 }
 
 inline void reduction_compute_data_sum(Tensor* self, const scalar_t* child_data, size_t child_len) {
     if (self->on_gpu) {
         auto& data = self->allocate_data_gpu();
 
-        kernel_reduction_sum<<<num_blocks(child_len), BLOCK_SIZE>>>(child_data, data, child_len);
+        kernel_reduction_sum<<<1, 1>>>(child_data, data, child_len);
     } else {
         auto& data = self->allocate_data_cpu();
 
