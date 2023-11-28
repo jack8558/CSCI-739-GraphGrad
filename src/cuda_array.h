@@ -16,27 +16,26 @@ inline void assert_no_cuda_error() {
 }
 #endif
 
-template <typename T>
 struct CudaArrayRef {
-    T* ptr;
+    scalar_t* ptr;
     size_t length;
 
-    CudaArrayRef(T* ptr, size_t length) : ptr(ptr), length(length) {}
+    CudaArrayRef(scalar_t* ptr, size_t length) : ptr(ptr), length(length) {}
 };
 
 struct CudaArray {
-    void* ptr;
-    size_t length_bytes;
+    scalar_t* ptr;
+    size_t length;
 
     // Allocate an empty array with the given number of elements.
-    explicit CudaArray(size_t length_bytes);
+    explicit CudaArray(size_t length);
 
     // Copy a CPU vector into a CUDA array.
-    explicit CudaArray(const std::vector<scalar_t>& data) : CudaArray(data.data(), data.size() * sizeof(scalar_t)) {}
+    explicit CudaArray(const std::vector<scalar_t>& data) : CudaArray(data.data(), data.size()) {}
 
     // Copy a CPU array into a CUDA array.
-    explicit CudaArray(const void* data, size_t length_bytes) : CudaArray(length_bytes) {
-        copy_from_range(data, length_bytes);
+    explicit CudaArray(const scalar_t* data, size_t length) : CudaArray(length) {
+        copy_from_range(data, length);
     }
 
     // CudaArray is non-copyable.
@@ -44,27 +43,20 @@ struct CudaArray {
     void operator=(CudaArray const& x) = delete;
 
     // CudaArray is moveable.
-    // CudaArray(CudaArray&& other) noexcept;
+    CudaArray(CudaArray&& other) noexcept : ptr(other.ptr), length(other.length) {
+        other.ptr = nullptr;
+    }
 
     ~CudaArray();
 
-    // Copy data from a CPU vector into this CUDA array.
-    template <typename T>
-    void copy_from(const std::vector<T>& data) {
-        assert(data.size() * sizeof(T) == length_bytes);
-        copy_from_range(data.data(), length_bytes);
-    }
-
     // Copy data from a CPU buffer into this CUDA array.
-    void copy_from_range(const void* src, size_t count);
+    void copy_from_range(const scalar_t* src, size_t count);
 
     // Copy the array into a new CPU vector.
     std::vector<scalar_t> to_vector() const;
 
     // Implicitly convert CudaArray to CudaArrayRef, for passing to kernels.
-    template <typename T>
-    operator CudaArrayRef<T>() {
-        assert(length_bytes % sizeof(T) == 0);
-        return CudaArrayRef{static_cast<T*>(ptr), length_bytes / sizeof(T)};
+    operator CudaArrayRef() {
+        return CudaArrayRef{ptr, length};
     }
 };

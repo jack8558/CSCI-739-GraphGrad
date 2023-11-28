@@ -24,10 +24,6 @@ class BinaryOp : public Tensor {
             this->hashValue = tensor_hash();
         }
 
-    // Equality operator for Tensor
-    bool operator==(const BinaryOp& other) const {
-        return this->dims == other.dims && this->op_type == other.op_type &&this->leftChild == other.leftChild && this->rightChild == other.rightChild;
-    }
 
     size_t tensor_hash(){
         size_t hashValue = 0;
@@ -38,105 +34,92 @@ class BinaryOp : public Tensor {
         return hashValue;
     }
 
-    const scalar_t* eval() override {
-        if (!this->data) {
+    void compute_data() override {
+        // Evaluate the child nodes and get their data.
+        const scalar_t* left_child_data = this->leftChild->eval();
+        const scalar_t* right_child_data = this->rightChild->eval();
 
-            // Allocate the data buffer.
-            auto& data = this->allocate_data();
+        // Allocate the data buffer.
+        auto& data = this->allocate_data_cpu();
 
-            auto result = Tensor::lruMap.get(this->hashValue);
-            if (result.has_value()) {
-                data = result.value();
-                return data.data();
-            }
-
-            // Evaluate the child node and get its data.
-            const scalar_t* left_child_data = this->leftChild->eval();
-            const scalar_t* right_child_data = this->rightChild->eval();
-
-            // Get a function to compute each value.
-            scalar_t (*scalar_func)(scalar_t, scalar_t);
-            switch (this->op_type) {
-                case BinaryOpType::ADD:
-                    scalar_func = [](scalar_t x, scalar_t y) { return x + y; };
-                    break;
-                case BinaryOpType::SUB:
-                    scalar_func = [](scalar_t x, scalar_t y) { return x - y; };
-                    break;
-                case BinaryOpType::MUL:
-                    scalar_func = [](scalar_t x, scalar_t y) { return x * y; };
-                    break;
-                case BinaryOpType::DIV:
-                    scalar_func = [](scalar_t x, scalar_t y) { return x / y; };
-                    break;
-                case BinaryOpType::POW:
-                    scalar_func = [](scalar_t x, scalar_t y) { return std::pow(x, y); };
-                    break;
-                case BinaryOpType::MATMUL:
-                    // MATMUL doesn't use a scalar_func.
-                    break;
-                default:
-                    throw std::domain_error("bad op_type");
-            }
-
-            // Fill the buffer with computed values.
-            switch (this->op_type) {
-                case BinaryOpType::MATMUL: {
-                    size_t width;
-                    size_t cols;
-                    if (this->rightChild->dims.size() == 1) {
-                        width = 1;
-                        cols = this->rightChild->dims[0];
-                    } else {
-                        width = this->rightChild->dims[0];
-                        cols = this->rightChild->dims[1];
-                    }
-
-                    // Make a temporary transposed copy of the right child's data so that the memory
-                    // accesses in the tight inner loop are more cache-friendly.
-                    std::vector<scalar_t> right_data_transposed(product(this->rightChild->dims));
-                    for (size_t i = 0; i < width; i++) {
-                        for (size_t j = 0; j < cols; j++) {
-                            right_data_transposed[j * width + i] = right_child_data[i * cols + j];
-                        }
-                    }
-
-                    #pragma omp parallel for
-                    for (size_t i = 0; i < data.size(); i++) {
-                        size_t r = i / cols;
-                        size_t c = i % cols;
-                        const scalar_t* left_row = left_child_data + (r * width);
-                        const scalar_t* right_col = right_data_transposed.data() + (c * width);
-
-                        scalar_t sum = 0.0;
-                        #pragma omp simd reduction(+:sum)
-                        for (size_t j = 0; j < width; j++) {
-                            sum += left_row[j] * right_col[j];
-                        }
-                        data[i] = sum;
-                    }
-
-                    break;
-                }
-
-                default: {
-                    #pragma omp parallel for
-                    for (size_t i = 0; i < data.size(); i++) {
-                        if (product(leftChild->dims) == 1) {
-                            data[i] = scalar_func(left_child_data[0], right_child_data[i]);
-                        } else if (product(rightChild->dims) == 1) {
-                            data[i] = scalar_func(left_child_data[i], right_child_data[0]);
-                        } else {
-                            data[i] = scalar_func(left_child_data[i], right_child_data[i]);
-                        }
-                    }
-                }
-            }
-            // Add it to hashmap
-            Tensor::lruMap.insert(this->hashValue, data);
+        // Get a function to compute each value.
+        scalar_t (*scalar_func)(scalar_t, scalar_t);
+        switch (this->op_type) {
+            case BinaryOpType::ADD:
+                scalar_func = [](scalar_t x, scalar_t y) { return x + y; };
+                break;
+            case BinaryOpType::SUB:
+                scalar_func = [](scalar_t x, scalar_t y) { return x - y; };
+                break;
+            case BinaryOpType::MUL:
+                scalar_func = [](scalar_t x, scalar_t y) { return x * y; };
+                break;
+            case BinaryOpType::DIV:
+                scalar_func = [](scalar_t x, scalar_t y) { return x / y; };
+                break;
+            case BinaryOpType::POW:
+                scalar_func = [](scalar_t x, scalar_t y) { return std::pow(x, y); };
+                break;
+            case BinaryOpType::MATMUL:
+                // MATMUL doesn't use a scalar_func.
+                break;
+            default:
+                throw std::domain_error("bad op_type");
         }
 
-        return data->data();
+        // Fill the buffer with computed values.
+        switch (this->op_type) {
+            case BinaryOpType::MATMUL: {
+                size_t width;
+                size_t cols;
+                if (this->rightChild->dims.size() == 1) {
+                    width = 1;
+                    cols = this->rightChild->dims[0];
+                } else {
+                    width = this->rightChild->dims[0];
+                    cols = this->rightChild->dims[1];
+                }
+
+                // Make a temporary transposed copy of the right child's data so that the memory
+                // accesses in the tight inner loop are more cache-friendly.
+                std::vector<scalar_t> right_data_transposed(product(this->rightChild->dims));
+                for (size_t i = 0; i < width; i++) {
+                    for (size_t j = 0; j < cols; j++) {
+                        right_data_transposed[j * width + i] = right_child_data[i * cols + j];
+                    }
+                }
+
+                #pragma omp parallel for
+                for (size_t i = 0; i < data.size(); i++) {
+                    size_t r = i / cols;
+                    size_t c = i % cols;
+                    const scalar_t* left_row = left_child_data + (r * width);
+                    const scalar_t* right_col = right_data_transposed.data() + (c * width);
+
+                    scalar_t sum = 0.0;
+                    #pragma omp simd reduction(+:sum)
+                    for (size_t j = 0; j < width; j++) {
+                        sum += left_row[j] * right_col[j];
+                    }
+                    data[i] = sum;
+                }
+
+                break;
+            }
+
+            default: {
+                #pragma omp parallel for
+                for (size_t i = 0; i < data.size(); i++) {
+                    if (product(leftChild->dims) == 1) {
+                        data[i] = scalar_func(left_child_data[0], right_child_data[i]);
+                    } else if (product(rightChild->dims) == 1) {
+                        data[i] = scalar_func(left_child_data[i], right_child_data[0]);
+                    } else {
+                        data[i] = scalar_func(left_child_data[i], right_child_data[i]);
+                    }
+                }
+            }
+        }
     }
 
     std::vector<Tensor*> get_children() override {

@@ -9,17 +9,12 @@ class TransposeOp : public Tensor {
     TransposeOp(std::shared_ptr<Tensor> arg, size_t dim0, size_t dim1)
         : Tensor(verify_and_get_dims(*arg, dim0, dim1)), child(arg) {
         // Check if dimensions are valid
-        if (dim0 < 0 || dim0 >= dims.size() || dim1 < 0 || dim1 >= dims.size()) {
+        if (dim0 >= dims.size() || dim1 >= dims.size()) {
             throw std::invalid_argument("Invalid dimensions for transpose");
         }
         this->hashValue = tensor_hash();
         this->dim0 = dim0;
         this->dim1 = dim1;
-    }
-
-    // Equality operator for Tensor
-    bool operator==(const TransposeOp& other) const {
-        return this->dims == other.dims && this->child == other.child;
     }
 
     size_t tensor_hash(){
@@ -30,58 +25,43 @@ class TransposeOp : public Tensor {
         return hashValue;
     }
 
-    const scalar_t* eval() override {
-        if (!this->data) {
-            
-            // Allocate the data buffer.
-            auto& data = this->allocate_data();
+    void compute_data() override {
+        // Evaluate the child node and get its data.
+        const scalar_t* child_data = this->child->eval();
 
-            auto result = Tensor::lruMap.get(this->hashValue);
-            if (result.has_value()) {
-                // The key was found, and you can access the value using result.value()
-                data = result.value();
-                return data.data();
-            }
+        // Allocate the data buffer.
+        auto& data = this->allocate_data_cpu();
 
-            // Evaluate the child node and get its data.
-            const scalar_t* child_data = this->child->eval();
+        // Transpose the data.
+        if (dims.size() == 2 && dim0 == 0 && dim1 == 1) {
+            // Special-case 2D matrix transpose for speed.
+            size_t rows = dims[0];
+            size_t cols = dims[1];
 
-            // Transpose the data.
-            if (dims.size() == 2 && dim0 == 0 && dim1 == 1) {
-                // Special-case 2D matrix transpose for speed.
-                size_t rows = dims[0];
-                size_t cols = dims[1];
-
-                #pragma omp parallel for
-                for (size_t i = 0; i < cols; i++) {
-                    for (size_t j = 0; j < rows; j++) {
-                        data[j * cols + i] = child_data[i * rows + j];
-                    }
-                }
-            } else {
-                // Compute strides.
-                std::vector<size_t> strides;
-                std::vector<size_t> original_strides;
-                if (this->dim0 != this->dim1) {
-                    strides = get_transposed_strides();
-                    original_strides = get_original_strides();
-                }
-
-                #pragma omp parallel for
-                for (size_t i = 0; i < data.size(); ++i) {
-                    if (this->dim0 == this->dim1) {
-                        data[i] = child_data[i];
-                    } else {
-                        data[i] = child_data[find_original_index(strides, original_strides, i)];
-                    }
+            #pragma omp parallel for
+            for (size_t i = 0; i < cols; i++) {
+                for (size_t j = 0; j < rows; j++) {
+                    data[j * cols + i] = child_data[i * rows + j];
                 }
             }
+        } else {
+            // Compute strides.
+            std::vector<size_t> strides;
+            std::vector<size_t> original_strides;
+            if (this->dim0 != this->dim1) {
+                strides = get_transposed_strides();
+                original_strides = get_original_strides();
+            }
 
-            // Add it to hashmap
-            Tensor::lruMap.insert(this->hashValue, data);
+            #pragma omp parallel for
+            for (size_t i = 0; i < data.size(); ++i) {
+                if (this->dim0 == this->dim1) {
+                    data[i] = child_data[i];
+                } else {
+                    data[i] = child_data[find_original_index(strides, original_strides, i)];
+                }
+            }
         }
-
-        return data->data();
     }
 
     std::vector<Tensor*> get_children() override {
@@ -170,5 +150,5 @@ class TransposeOp : public Tensor {
 
 inline static std::shared_ptr<Tensor> transpose(std::shared_ptr<Tensor> t, int dim0, int dim1) {
     // check if in hashmap
-    return std::shared_ptr<Tensor>(new TransposeOp(t, dim0, dim1));                             
+    return std::shared_ptr<Tensor>(new TransposeOp(t, dim0, dim1));
 }
