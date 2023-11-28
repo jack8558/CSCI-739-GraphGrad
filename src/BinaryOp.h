@@ -7,6 +7,7 @@ namespace py = pybind11;
 
 #include "Tensor.h"
 #include "ReshapeOp.h"
+#include "TransposeOp.cuh"
 #include "utils.h"
 #include "cuda_helpers.h"
 
@@ -68,6 +69,14 @@ enum class BinaryOpType {
         }                                                                                     \
     }
 
+__global__ void kernel_matmul_2d(const scalar_t* left, const scalar_t* right, CudaArrayRef out) {
+    size_t index = (blockIdx.x * blockDim.x) + threadIdx.x;
+
+    if (index < out.length) {
+        // TODO
+    }
+}
+
 IMPL_POINTWISE_BINARY_OP(add, a + b)
 IMPL_POINTWISE_BINARY_OP(sub, a - b)
 IMPL_POINTWISE_BINARY_OP(mul, a * b)
@@ -121,8 +130,6 @@ class BinaryOp : public Tensor {
                 break;
             case BinaryOpType::MATMUL:
             {
-                // Allocate the data buffer.
-                auto& data = this->allocate_data_cpu();
                 // MATMUL doesn't use a scalar_func.
                 assert(this->leftChild->dims.size() == 2);
                 assert(this->rightChild->dims.size() == 2);
@@ -131,28 +138,41 @@ class BinaryOp : public Tensor {
                 size_t width = this->rightChild->dims[0];
                 size_t cols = this->rightChild->dims[1];
 
-                // Make a temporary transposed copy of the right child's data so that the memory
-                // accesses in the tight inner loop are more cache-friendly.
-                std::vector<scalar_t> right_data_transposed(product(this->rightChild->dims));
-                for (size_t i = 0; i < width; i++) {
-                    for (size_t j = 0; j < cols; j++) {
-                        right_data_transposed[j * width + i] = right_child_data[i * cols + j];
-                    }
-                }
+                if (this->on_gpu){
+                    auto& data = this->allocate_data_gpu();
 
-                #pragma omp parallel for
-                for (size_t i = 0; i < data.size(); i++) {
-                    size_t r = i / cols;
-                    size_t c = i % cols;
-                    const scalar_t* left_row = left_child_data + (r * width);
-                    const scalar_t* right_col = right_data_transposed.data() + (c * width);
+                    // Make a temporary transpose copy of the righ child's data on gpu
+                    std::shared_ptr<Tensor> rigth_data_transposed = transpose(this->rightChild, 0, 1);
+                    right_child_data = rigth_data_transposed->eval();
+                    kernel_matmul_2d<<<num_blocks(data.length), BLOCK_SIZE>>>(left_child_data, right_child_data, data);
 
-                    scalar_t sum = 0.0;
-                    #pragma omp simd reduction(+:sum)
-                    for (size_t j = 0; j < width; j++) {
-                        sum += left_row[j] * right_col[j];
+                } else {
+                    // Allocate the data buffer.
+                    auto& data = this->allocate_data_cpu();
+
+                    // Make a temporary transposed copy of the right child's data so that the memory
+                    // accesses in the tight inner loop are more cache-friendly.
+                    std::vector<scalar_t> right_data_transposed(product(this->rightChild->dims));
+                    for (size_t i = 0; i < width; i++) {
+                        for (size_t j = 0; j < cols; j++) {
+                            right_data_transposed[j * width + i] = right_child_data[i * cols + j];
+                        }
                     }
-                    data[i] = sum;
+
+                    #pragma omp parallel for
+                    for (size_t i = 0; i < data.size(); i++) {
+                        size_t r = i / cols;
+                        size_t c = i % cols;
+                        const scalar_t* left_row = left_child_data + (r * width);
+                        const scalar_t* right_col = right_data_transposed.data() + (c * width);
+
+                        scalar_t sum = 0.0;
+                        #pragma omp simd reduction(+:sum)
+                        for (size_t j = 0; j < width; j++) {
+                            sum += left_row[j] * right_col[j];
+                        }
+                        data[i] = sum;
+                    }
                 }
                 break;
             }
