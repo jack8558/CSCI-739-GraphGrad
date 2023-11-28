@@ -40,7 +40,7 @@ def test1(device):
     gg_res = tensor_x.matmul(tensor_y).relu().matmul(tensor_z)
 
     print("GraphGrad result:")
-    # print(gg_res)
+    print(gg_res)
     print()
 
     end = time.perf_counter()

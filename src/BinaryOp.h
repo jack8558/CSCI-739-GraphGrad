@@ -22,6 +22,7 @@ class BinaryOp : public Tensor {
     BinaryOp(std::shared_ptr<Tensor> arg1, std::shared_ptr<Tensor> arg2, BinaryOpType op_type)
         : Tensor(verify_and_get_dims(*arg1, *arg2, op_type)), leftChild(arg1), rightChild(arg2), op_type(op_type) {
             this->hashValue = tensor_hash();
+            this->on_gpu = arg1->on_gpu && arg2->on_gpu;
         }
 
 

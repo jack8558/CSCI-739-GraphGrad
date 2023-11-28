@@ -3,6 +3,17 @@
 #include <memory>
 
 #include "Tensor.h"
+#include "cuda_helpers.h"
+
+__global__ void kernel_transpose_2d(const scalar_t* in, CudaArrayRef out, int rows, int cols) {         
+    size_t index = (blockIdx.x * blockDim.x) + threadIdx.x;                               
+                                                                                            
+    if (index < out.length) {                                            
+        int new_index = (index % rows) * cols + (index / rows);
+        out.ptr[new_index] = in[index];                                                                                                                   
+    }                                                                                     
+}
+
 
 class TransposeOp : public Tensor {
    public:
@@ -12,6 +23,7 @@ class TransposeOp : public Tensor {
         if (dim0 >= dims.size() || dim1 >= dims.size()) {
             throw std::invalid_argument("Invalid dimensions for transpose");
         }
+        this->on_gpu = arg->on_gpu;
         this->hashValue = tensor_hash();
         this->dim0 = dim0;
         this->dim1 = dim1;
@@ -29,39 +41,47 @@ class TransposeOp : public Tensor {
         // Evaluate the child node and get its data.
         const scalar_t* child_data = this->child->eval();
 
-        // Allocate the data buffer.
-        auto& data = this->allocate_data_cpu();
-
-        // Transpose the data.
-        if (dims.size() == 2 && dim0 == 0 && dim1 == 1) {
-            // Special-case 2D matrix transpose for speed.
-            size_t rows = dims[0];
-            size_t cols = dims[1];
-
-            #pragma omp parallel for
-            for (size_t i = 0; i < cols; i++) {
-                for (size_t j = 0; j < rows; j++) {
-                    data[j * cols + i] = child_data[i * rows + j];
-                }
-            }
+        if (this->on_gpu){
+            auto& data = this->allocate_data_gpu();    
+            kernel_transpose_2d<<<num_blocks(data.length), BLOCK_SIZE>>>(child_data, data, this->dims[0], this->dims[1]);
         } else {
-            // Compute strides.
-            std::vector<size_t> strides;
-            std::vector<size_t> original_strides;
-            if (this->dim0 != this->dim1) {
-                strides = get_transposed_strides();
-                original_strides = get_original_strides();
-            }
+            // Allocate the data buffer.
+            auto& data = this->allocate_data_cpu();
 
-            #pragma omp parallel for
-            for (size_t i = 0; i < data.size(); ++i) {
-                if (this->dim0 == this->dim1) {
-                    data[i] = child_data[i];
-                } else {
-                    data[i] = child_data[find_original_index(strides, original_strides, i)];
+            // Transpose the data.
+            if (dims.size() == 2 && dim0 == 0 && dim1 == 1) {
+                // Special-case 2D matrix transpose for speed.
+                size_t rows = dims[0];
+                size_t cols = dims[1];
+
+                #pragma omp parallel for
+                for (size_t i = 0; i < cols; i++) {
+                    for (size_t j = 0; j < rows; j++) {
+                        data[j * cols + i] = child_data[i * rows + j];
+                    }
+                }
+            } else {
+                // Compute strides.
+                std::vector<size_t> strides;
+                std::vector<size_t> original_strides;
+                if (this->dim0 != this->dim1) {
+                    strides = get_transposed_strides();
+                    original_strides = get_original_strides();
+                }
+
+                #pragma omp parallel for
+                for (size_t i = 0; i < data.size(); ++i) {
+                    if (this->dim0 == this->dim1) {
+                        data[i] = child_data[i];
+                    } else {
+                        data[i] = child_data[find_original_index(strides, original_strides, i)];
+                    }
                 }
             }
+
         }
+
+        
     }
 
     std::vector<Tensor*> get_children() override {

@@ -14,6 +14,7 @@ class ReshapeOp : public Tensor {
             if (product(arg->dims) != product(new_dims)) {
                 throw std::invalid_argument("Mismatched dims in reshape");
             }
+            this->on_gpu = arg->on_gpu;
             this->hashValue = tensor_hash();
         }
 

@@ -11,7 +11,7 @@ namespace py = pybind11;
 #include "ReductionOp.h"
 #include "ReshapeOp.h"
 #include "Tensor.h"
-#include "TransposeOp.h"
+#include "TransposeOp.cuh"
 #include "UnaryOp.cuh"
 #include "python_data_to_tensor.h"
 #include "Tensor_backward.cuh"

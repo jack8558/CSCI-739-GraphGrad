@@ -57,6 +57,7 @@ class UnaryOp : public Tensor {
    public:
     UnaryOp(std::shared_ptr<Tensor> arg, UnaryOpType op_type)
         : Tensor(arg->dims), child(arg), op_type(op_type) {
+        this->on_gpu = arg->on_gpu;
         this->hashValue = tensor_hash();
     }
 
