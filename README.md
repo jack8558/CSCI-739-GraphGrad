@@ -9,7 +9,7 @@ C++17 compiler must be installed to use Graphgrad.
 
 Set up with conda environment.
 Make sure you have miniconda and python3 installed and updated in your machine.
-```
+``` shell
 -- Create and activate conda env
 conda create --name myenv
 conda activate myenv
@@ -24,7 +24,7 @@ conda install cuda-toolkit -c nvidia
 This will install all the packages needed for python interface.
 
 To compile, simply run:
-```
+``` shell
 make
 ```
 
@@ -32,7 +32,7 @@ make
 ## How to use
 After running make, user should be able to import graphgrad in python
 
-```
+``` py
 python3
 >>> import graphgrad as gg
 >>> tensor1 = gg.tensor([1,2])
@@ -41,19 +41,25 @@ python3
 
 ```
 
-##TODO How to run with GPU
+## How to run with GPU
+To use GraphGrad with GPU, user needs to set use_gpu True right after GraphGrad gets imported. 
+``` py
+>>> import graphgrad as gg
+>>> gg.use_gpu(True)
+```
+After this, all the tensors will be allocated on the GPU, and operations will be executed on the GPU.
 
 ### Ways to construct tensor
 Users can construct the leaf tensor by using following constructors.
 
 - Construct with data: call gg.tensor function with list
-```
+``` py
 >>> tensor = gg.tensor([[1,2],[3,4]])
 >>> tensor
 <Tensor: dims=[2, 2], data=[1.000000, 2.000000, 3.000000, 4.000000]>
 ```
 - Construct with random values: pass the dimension as argument and returns tensor with random values
-```
+``` py
 >>> tensor = gg.rand([2,3])
 >>> tensor
 <Tensor: dims=[2, 3], data=[0.049640, 0.684461, 0.721733, 0.942821, 0.729735, 0.754699]>
@@ -61,7 +67,7 @@ Users can construct the leaf tensor by using following constructors.
 
 ### Scalar tensor
 You can define scalar tensor like below.
-```
+``` py
 >>> tensor = gg.tensor(1)
 >>> tensor
 <Tensor: dims=[], data=[1.000000]>
@@ -81,7 +87,7 @@ NOTE: Since GraphGrad uses lazy evaluation, it does not evaluate until the eval 
 
 
 - *neg(t)*: Returns a new tensor with the negative of the elements of input tensor.
-```
+``` py
 >>> tensor = gg.tensor([1,2])
 >>> tensor_neg = tensor.neg()
 >>> tensor_neg
@@ -95,7 +101,7 @@ or
 
 ```
 - *reciprocal*: Returns a new tensor with the reciprocal of the elements of input.
-```
+``` py
 >>> tensor = gg.tensor([1,2])
 >>> tensor_recip = tensor.reciprocal()
 >>> tensor_recip
@@ -109,7 +115,7 @@ or
 
 ```
 - *relu*: Returns a new tensor with the rectified linear unit function element-wise.
-```
+``` py
 >>> tensor = gg.tensor([1,-2])
 >>> tensor_relu = tensor.relu()
 >>> tensor_relu
@@ -123,7 +129,7 @@ or
 
 ```
 - *binilarize*: Returns a new tensor where element becomes 1 if input element was 1, otherwise 0.
-```
+``` py
 >>> tensor = gg.tensor([1,-3,-1,100])
 >>> tensor_bin = tensor.binilarize()
 >>> tensor_bin
@@ -136,7 +142,7 @@ or
 <Tensor: dims=[4], data=[1.000000, 0.000000, 0.000000, 1.000000]>
 ```
 - *exp*: Returns a new tensor with the exponential of the elements of the input tensor input.
-```
+``` py
 >>> tensor = gg.tensor([1,2,3])
 >>> tensor_exp = tensor.exp()
 >>> tensor_exp
@@ -149,7 +155,7 @@ or
 <Tensor: dims=[3], data=[2.718282, 7.389056, 20.085537]>
 ```
 - *log*: Returns a new tensor with log applied element wise.
-```
+``` py
 >>> tensor = gg.tensor([1,2])
 >>> tensor_log = tensor.log()
 >>> tensor_log
@@ -163,7 +169,7 @@ or
 
 ```
 - *transpose(dim0, dim1)*: Returns a new tensor that swap dimension of dim0 and dim1.
-```
+``` py
 >>> tensor = gg.tensor([[1,2,3],[4,5,6],[7,8,9]])
 >>> tensor_transpose = tensor.transpose(0,1)
 >>> tensor_transpose
@@ -177,7 +183,7 @@ or
 ```
 
 - *reshape(dims)*: Returns a new reshaped tensor with given dimension.
-```
+``` py
 >>> tensor = gg.tensor([1,2,3,4,5,6])
 >>> tensor_reshape = tensor.reshape([2,3])
 >>> tensor_reshape
@@ -191,7 +197,7 @@ or
 ```
 
 - *add or +*: Returns a new tensor where element is added elementwise. Also able to do <scalar> + <tensor>. 
-```
+``` py
 >>> tensor1 = gg.tensor([[1,2],[3,4]])
 >>> tensor2 = gg.tensor([[5,6],[7,8]])
 >>> tensor_add = tensor1.add(tensor2)
@@ -205,7 +211,7 @@ or
 <Tensor: dims=[2, 2], data=[6.000000, 8.000000, 10.000000, 12.000000]>
 ```
 - *subtract or -*: Returns a new tensor where element is subtracted elementwise. Also able to do <scalar> - <tensor>. 
-```
+``` py
 >>> tensor1 = gg.tensor([[1,2],[3,4]])
 >>> tensor2 = gg.tensor([[5,6],[7,8]])
 >>> tensor_subtract = tensor1.subtract(tensor2)
@@ -220,7 +226,7 @@ or
 
 ```
 - *mul or \**: Returns a new tensor where element is multiplied elementwise. Also able to do <scalar> * <tensor>. 
-```
+``` py
 >>> tensor1 = gg.tensor([[1,2],[3,4]])
 >>> tensor2 = gg.tensor([[5,6],[7,8]])
 >>> tensor_mul = tensor1.mul(tensor2)
@@ -235,7 +241,7 @@ or
 ```
 
 - *div or /*: Returns a new tensor where element is divided elmenetwise. Also able to do <scalar> / <tensor>.
-```
+``` py
 >>> tensor1 = gg.tensor(2)
 >>> tensor2 = gg.tensor([[3,4],[5,6]])
 >>> tensor_div = tensor1.div(tensor2)
@@ -249,7 +255,7 @@ or
 ```
 
 - *matmul*: Performs matrix multiplication. Currently only supports up to 2D tensors for matmul.
-```
+``` py
 >>> tensor1 = gg.tensor([[1,2],[3,4]])
 >>> tensor2 = gg.tensor([[5,6],[7,8]])
 >>> tensor_matmul = tensor1.matmul(tensor2)
@@ -258,7 +264,7 @@ or
 ```
 
 - *pow*: Takes the power of each element in t1 with t2 and returns a tensor with the result.
-```
+``` py
 >>> tensor1 = gg.tensor([[1,2],[3,4]])
 >>> tensor2 = gg.tensor([[5,6],[7,8]])
 >>> tensor_pow = tensor1.pow(tensor2)
@@ -266,7 +272,7 @@ or
 <Tensor: dims=[2, 2], data=[1.000000, 64.000000, 2187.000000, 65536.000000]>
 ```
 - *sum*: Returns the sum of all elements in the input tensor.
-```
+``` py
 >>> tensor1 = gg.tensor([[1,2],[3,4]])
 >>> tensor2 = gg.tensor([[5,6],[7,8]])
 >>> tensor_sum = tensor1.sum()
@@ -276,7 +282,7 @@ or
 
 ### Computing gradients
 - backward: Computes the gradient of current tensor wrt graph leaves. The graph is differentiated using the chain rule. You can only apply bakcward to scalar tensor(sum operator comes handy this case). Calling `.grad` for tensors will show relative gradient.
-```
+``` py
 >>> tensor1 = gg.tensor([[1,2],[3,4]])
 >>> tensor2 = gg.tensor([[5,6],[7,8]])
 >>> tensor3 = gg.tensor([[2,2],[2,2]])
@@ -297,7 +303,7 @@ or
 
 
 ## Unit test
-Make sure pytest is installed and run following command.
+There are various unit tests that checks if GraphGrad operations are correct. It runs same expressions on both GraphGrad and pytorch and compare the results. Make sure pytest is installed and run following command.
 ```
 pytest
 ```
@@ -310,7 +316,7 @@ Below are optimization techniques GraphGrad uses
 - CPU Optimization: GraphGrad uses OpenMP to optimize CPU execution with multithreading.
 - SIMD: GraphGrad uses SIMD computation for matmul.
 - CSE (Common Subexpression Elimination): CSE is implemented, so common subexpressions do not need to be computed again. GraphGrad has an internal hashmap that stores values of tensors that were computed before. If the hashmap exceeds the max capacity, it will remove the least recently used element from the hashmap.
-- GPU optimization: TODO
+- GPU optimization: When `use_gpu` is set to True by the user, GraphGrad will perform all computations on the GPU. GPU optimization has been applied by executing tensor operations in parallel.
 
 ## Classifier
 A simple binary logistic logression classifier has been implemented in `tests/logistic_regression_example.py`. The accuracy was compared against sklearn's logistic regression classifier and achieves comparable performance on sklearn's breast_cancer dataset:
@@ -335,7 +341,7 @@ Below are the reusult of benchmark when ran in following machine spec.
 - 48 threads in total (2 sockets, 12 cores per socket, 2 threads per core)
 - 251 GB memory
 
-### Result
+### Result CPU
 
 Test 1:
 
@@ -363,6 +369,8 @@ Test 5 (Case when there are multiple common subexpression):
     Torch time: 1.233367821900174
 
 For a very simple case (test1), GraphGrad takes longer than torch. For other larger cases, torch is approximately 10 times faster than GraphGrad. This is a good result considering PyTorch has multiple other optimizations installed internally. In cases where there are many common subexpressions, GraphGrad outperforms PyTorch.
+
+### Result GPU
 
 
 
