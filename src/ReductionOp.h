@@ -12,7 +12,7 @@ enum class ReductionOpType {
 class ReductionOp : public Tensor {
    public:
     ReductionOp(std::shared_ptr<Tensor> arg, ReductionOpType op_type)
-        : Tensor(std::vector<size_t>{1}), child(arg), op_type(op_type) {
+        : Tensor({}), child(arg), op_type(op_type) {
             this->on_gpu = arg->on_gpu;
             this->hashValue = tensor_hash();
         }

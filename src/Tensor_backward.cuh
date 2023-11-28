@@ -65,6 +65,15 @@ void Tensor::add_grad(std::shared_ptr<Tensor> grad) {
     } else {
         this->grad = std::move(grad);
     }
+
+    // Verify that this->grad->dims == this->dims.
+    if (this->grad->dims != this->dims) {
+        std::string error_message = "this->grad->dims=";
+        error_message += vector_to_string(this->grad->dims);
+        error_message += " doesn't match this->dims=";
+        error_message += vector_to_string(this->dims);
+        throw std::logic_error(error_message);
+    }
 }
 
 // Gradient definitions for operators:
