@@ -198,6 +198,8 @@ IMPL_OPERATOR_OVERLOAD(/, DIV)
 
 // Functions:
 
+namespace gg {
+
 #define IMPL_OP_FUNC(func_name, op_type)                                                                     \
     inline static std::shared_ptr<Tensor> func_name(std::shared_ptr<Tensor> t, std::shared_ptr<Tensor> t2) { \
         return std::shared_ptr<Tensor>(new BinaryOp(t, t2, BinaryOpType::op_type));                          \
@@ -209,5 +211,7 @@ IMPL_OP_FUNC(mul, MUL)
 IMPL_OP_FUNC(matmul, MATMUL)
 IMPL_OP_FUNC(pow, POW)
 IMPL_OP_FUNC(div, DIV)
+
+}
 
 #undef IMPL_OP_FUNC

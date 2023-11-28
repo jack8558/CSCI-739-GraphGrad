@@ -67,6 +67,7 @@ void Tensor::add_grad(std::shared_ptr<Tensor> grad) {
 // Gradient definitions for operators:
 
 void UnaryOp::backward_step() {
+    using namespace gg;
     switch (this->op_type) {
         case UnaryOpType::NEG:
             this->child->add_grad(-this->grad * Tensor::ones(this->child->dims));
@@ -92,6 +93,7 @@ void UnaryOp::backward_step() {
 }
 
 void BinaryOp::backward_step() {
+    using namespace gg;
     switch (this->op_type) {
         case BinaryOpType::ADD:
             if (product(this->leftChild->dims) > 1) {

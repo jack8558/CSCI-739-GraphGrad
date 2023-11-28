@@ -43,6 +43,13 @@ def gg_tensor_1_10():
     return gg.rand([1, 10])
 
 
+def to_torch_tensor(value, **kwargs):
+    """Convert a gg tensor or a python scalar to a pytorch tensor."""
+    if isinstance(value, gg.tensor):
+        value = value.to_list()
+    return torch.tensor(value, dtype=torch.float64, **kwargs)
+
+
 class TestBinaryOP:
     # The different pointwise/scalar binary ops to test.
     # Each item is a tuple of (GraphGrad op, equivalent PyTorch op).
@@ -50,24 +57,24 @@ class TestBinaryOP:
     # Note: Does not include matmul, which requires different checks
     BINARY_OPS = [
         # Addition
-        (gg.add, torch.add),
-        (lambda gg_tensor, gg_tensor2: gg_tensor + gg_tensor2, torch.add),
-        (lambda gg_tensor, gg_tensor2: gg_tensor.add(gg_tensor2), torch.add),
+        (True, gg.add, torch.add),
+        (True, lambda gg_tensor, gg_tensor2: gg_tensor + gg_tensor2, torch.add),
+        (False, lambda gg_tensor, gg_tensor2: gg_tensor.add(gg_tensor2), torch.add),
         # Subtraction
-        (gg.subtract, torch.subtract),
-        (lambda gg_tensor, gg_tensor2: gg_tensor - gg_tensor2, torch.subtract),
-        (lambda gg_tensor, gg_tensor2: gg_tensor.subtract(gg_tensor2), torch.subtract),
+        (True, gg.subtract, torch.subtract),
+        (True, lambda gg_tensor, gg_tensor2: gg_tensor - gg_tensor2, torch.subtract),
+        (False, lambda gg_tensor, gg_tensor2: gg_tensor.subtract(gg_tensor2), torch.subtract),
         # Multiplication
-        (gg.mul, torch.mul),
-        (lambda gg_tensor, gg_tensor2: gg_tensor * gg_tensor2, torch.mul),
-        (lambda gg_tensor, gg_tensor2: gg_tensor.mul(gg_tensor2), torch.mul),
+        (True, gg.mul, torch.mul),
+        (True, lambda gg_tensor, gg_tensor2: gg_tensor * gg_tensor2, torch.mul),
+        (False, lambda gg_tensor, gg_tensor2: gg_tensor.mul(gg_tensor2), torch.mul),
         # Division
-        (gg.div, torch.div),
-        (lambda gg_tensor, gg_tensor2: gg_tensor / gg_tensor2, torch.div),
-        (lambda gg_tensor, gg_tensor2: gg_tensor.div(gg_tensor2), torch.div),
+        (True, gg.div, torch.div),
+        (True, lambda gg_tensor, gg_tensor2: gg_tensor / gg_tensor2, torch.div),
+        (False, lambda gg_tensor, gg_tensor2: gg_tensor.div(gg_tensor2), torch.div),
         # Power
-        (gg.pow, torch.pow),
-        (lambda gg_tensor, gg_tensor2: gg_tensor.pow(gg_tensor2), torch.pow),
+        (True, gg.pow, torch.pow),
+        (False, lambda gg_tensor, gg_tensor2: gg_tensor.pow(gg_tensor2), torch.pow),
     ]
 
     BINARY_INPUTS = [
@@ -87,9 +94,17 @@ class TestBinaryOP:
         ("gg_scalar1", "gg_scalar1"),
         ("gg_scalar2", "gg_scalar2"),
         ("gg_scalar3", "gg_scalar3"),
+        # tensor, Python scalar
+        ("gg_tensor_5_10", 3.14),
+        ("gg_tensor_10_10", 3.14),
+        ("gg_tensor_50_100", 3.14),
+        # Python scalar, tensor
+        (3.14, "gg_tensor_5_10"),
+        (3.14, "gg_tensor_10_10"),
+        (3.14, "gg_tensor_50_100"),
     ]
 
-    @pytest.mark.parametrize("gg_func, torch_func", BINARY_OPS)
+    @pytest.mark.parametrize("scalar_lhs_ok, gg_func, torch_func", BINARY_OPS)
     @pytest.mark.parametrize("gg_left, gg_right", BINARY_INPUTS)
     def test_binary_op(
         self,
@@ -97,25 +112,29 @@ class TestBinaryOP:
         gg_right,
         gg_func,
         torch_func,
+        scalar_lhs_ok,
         request,
     ):
-        gg_left, gg_right = request.getfixturevalue(gg_left), request.getfixturevalue(
-            gg_right
-        )
+        if isinstance(gg_left, str):
+            gg_left = request.getfixturevalue(gg_left)
+        elif not scalar_lhs_ok:
+            return  # This op isn't supposed to be tested with a scalar LHS
+        if isinstance(gg_right, str):
+            gg_right = request.getfixturevalue(gg_right)
         gg_result = gg_func(gg_left, gg_right)
-        torch_left = torch.tensor(gg_left.to_list(), dtype=torch.float64)
-        torch_right = torch.tensor(gg_right.to_list(), dtype=torch.float64)
+        torch_left = to_torch_tensor(gg_left)
+        torch_right = to_torch_tensor(gg_right)
         torch_result = torch_func(torch_left, torch_right)
         assert np.isclose(gg_result.to_list(), torch_result, rtol=1e-4).all()
 
-    @pytest.mark.parametrize("gg_op", [gg_op for gg_op, _ in BINARY_OPS])
+    @pytest.mark.parametrize("gg_op", [gg_op for _, gg_op, _ in BINARY_OPS])
     def test_binary_op_shape_mismatch_raises(self, gg_op):
         tensor1 = gg.rand([3, 4])
         tensor2 = gg.rand([4, 3])
         with pytest.raises(ValueError):
             gg_op(tensor1, tensor2)
 
-    @pytest.mark.parametrize("gg_func, torch_func", BINARY_OPS)
+    @pytest.mark.parametrize("scalar_lhs_ok, gg_func, torch_func", BINARY_OPS)
     @pytest.mark.parametrize("gg_left, gg_right", BINARY_INPUTS)
     def test_binary_op_backward(
         self,
@@ -123,19 +142,26 @@ class TestBinaryOP:
         gg_right,
         gg_func,
         torch_func,
+        scalar_lhs_ok,
         request,
     ):
-        gg_left = gg.tensor(request.getfixturevalue(gg_left).to_list())
-        gg_right = gg.tensor(request.getfixturevalue(gg_right).to_list())
+        if isinstance(gg_left, str):
+            gg_left = gg.tensor(request.getfixturevalue(gg_left).to_list())
+        elif not scalar_lhs_ok:
+            return  # This op isn't supposed to be tested with a scalar LHS
+        if isinstance(gg_right, str):
+            gg_right = gg.tensor(request.getfixturevalue(gg_right).to_list())
         gg_result = gg_func(gg_left, gg_right)
-        torch_left = torch.tensor(gg_left.to_list(), dtype=torch.float64, requires_grad=True)
-        torch_right = torch.tensor(gg_right.to_list(), dtype=torch.float64, requires_grad=True)
+        torch_left = to_torch_tensor(gg_left, requires_grad=True)
+        torch_right = to_torch_tensor(gg_right, requires_grad=True)
         torch_result = torch_func(torch_left, torch_right)
 
         gg_result.sum().backward()
         torch_result.sum().backward()
-        assert np.isclose(gg_left.grad.to_list(), torch_left.grad, rtol=1e-4).all()
-        assert np.isclose(gg_right.grad.to_list(), torch_right.grad, rtol=1e-4).all()
+        if isinstance(gg_left, gg.tensor):
+            assert np.isclose(gg_left.grad.to_list(), torch_left.grad, rtol=1e-4).all()
+        if isinstance(gg_right, gg.tensor):
+            assert np.isclose(gg_right.grad.to_list(), torch_right.grad, rtol=1e-4).all()
 
     MATMUL_INPUTS = [
         # 1D scalar, 1D scalar
@@ -169,8 +195,8 @@ class TestBinaryOP:
         gg_left, gg_right = request.getfixturevalue(gg_left), request.getfixturevalue(
             gg_right
         )
-        torch_left = torch.tensor(gg_left.to_list(), dtype=torch.float64)
-        torch_right = torch.tensor(gg_right.to_list(), dtype=torch.float64)
+        torch_left = to_torch_tensor(gg_left)
+        torch_right = to_torch_tensor(gg_right)
         torch_result = torch.matmul(torch_left, torch_right)
 
         gg_result = gg.matmul(gg_left, gg_right)
@@ -200,8 +226,8 @@ class TestBinaryOP:
         gg_left = gg.tensor(request.getfixturevalue(gg_left).to_list())
         gg_right = gg.tensor(request.getfixturevalue(gg_right).to_list())
         gg_result = gg.matmul(gg_left, gg_right)
-        torch_left = torch.tensor(gg_left.to_list(), dtype=torch.float64, requires_grad=True)
-        torch_right = torch.tensor(gg_right.to_list(), dtype=torch.float64, requires_grad=True)
+        torch_left = to_torch_tensor(gg_left, requires_grad=True)
+        torch_right = to_torch_tensor(gg_right, requires_grad=True)
         torch_result = torch.matmul(torch_left, torch_right)
 
         gg_result.sum().backward()

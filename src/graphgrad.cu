@@ -62,14 +62,13 @@ PYBIND11_MODULE(graphgrad, m) {
     m.def("zeros", &Tensor::zeros);
     m.def("ones", &Tensor::ones);
 
-#define DEF_TENSOR_FUNC(name, func_lambda) \
-    {                                      \
-        auto func = (func_lambda);         \
-        tensor_class.def(name, func);      \
-        m.def(name, func);                 \
-    }
+    auto def_tensor_func = [&](const char* name, auto func_lambda) {
+        auto func = (func_lambda);
+        tensor_class.def(name, func);
+        m.def(name, func);
+    };
 
-#define DEF_UNARY(name, op_type) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t) { \
+#define DEF_UNARY(name, op_type) def_tensor_func(name, [](std::shared_ptr<Tensor> t) { \
     return std::shared_ptr<Tensor>(new UnaryOp(t, UnaryOpType::op_type));              \
 });
     DEF_UNARY("neg", NEG);
@@ -80,33 +79,52 @@ PYBIND11_MODULE(graphgrad, m) {
     DEF_UNARY("exp", EXP);
     DEF_UNARY("log", LOG);
 
-#define DEF_TRANSPOSE(name) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t, int dim0, int dim1) { \
+#define DEF_TRANSPOSE(name) def_tensor_func(name, [](std::shared_ptr<Tensor> t, int dim0, int dim1) { \
     return std::shared_ptr<Tensor>(new TransposeOp(t, dim0, dim1));                                   \
 });
     DEF_TRANSPOSE("transpose");
 
-#define DEF_RESHAPE(name) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t, std::vector<size_t> new_dims) { \
+#define DEF_RESHAPE(name) def_tensor_func(name, [](std::shared_ptr<Tensor> t, std::vector<size_t> new_dims) { \
     return std::shared_ptr<Tensor>(new ReshapeOp(t, new_dims));                                               \
 });
     DEF_RESHAPE("reshape");
 
-#define DEF_BINARY(name, op_type) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2) { \
-    return std::shared_ptr<Tensor>(new BinaryOp(t1, t2, BinaryOpType::op_type));                                     \
-});
-#define DEF_BINARY_WITH_OP(name, op_type, op, py_op)                                                                        \
-    {                                                                                                                       \
-        DEF_BINARY(name, op_type);                                                                                          \
-        tensor_class.def("__" py_op "__", [](std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2) { return t1 op t2; }); \
-    }
-    DEF_BINARY_WITH_OP("add", ADD, +, "add");
-    DEF_BINARY_WITH_OP("subtract", SUB, -, "sub");
-    DEF_BINARY_WITH_OP("mul", MUL, *, "mul");
-    DEF_BINARY_WITH_OP("div", DIV, /, "truediv");
-    DEF_BINARY("matmul", MATMUL);
-    tensor_class.def("__matmul__", [](std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2) { return matmul(t1, t2); });
-    DEF_BINARY("pow", POW);
+    auto def_binary = [&](const char* name, auto op_func, std::optional<const char*> py_op, bool allow_scalars) {
+        auto concat = [](auto p1, auto p2, auto p3) {
+            return std::string(p1) + p2 + p3;
+        };
+        std::string py_op_func = concat("__", py_op.value_or(""), "__");
+        std::string py_op_func_rev = concat("__r", py_op.value_or(""), "__");
 
-#define DEF_REDUCTION(name, op_type) DEF_TENSOR_FUNC(name, [](std::shared_ptr<Tensor> t) { \
+        // tensor, tensor
+        def_tensor_func(name, op_func);
+        if (py_op) {
+            tensor_class.def(py_op_func.c_str(), op_func);
+        }
+
+        if (allow_scalars) {
+            // tensor, scalar
+            auto ts_op_func = [=](std::shared_ptr<Tensor> t1, scalar_t t2) { return op_func(t1, Tensor::from_scalar(t2)); };
+            def_tensor_func(name, ts_op_func);
+            if (py_op) {
+                tensor_class.def(py_op_func.c_str(), ts_op_func);
+            }
+
+            // scalar, tensor
+            m.def(name, [=](scalar_t t1, std::shared_ptr<Tensor> t2) { return op_func(Tensor::from_scalar(t1), t2); });
+            if (py_op) {
+                tensor_class.def(py_op_func_rev.c_str(), [=](std::shared_ptr<Tensor> t2, scalar_t t1) { return op_func(Tensor::from_scalar(t1), t2); });
+            }
+        }
+    };
+    def_binary("add", gg::add, "add", true);
+    def_binary("subtract", gg::subtract, "sub", true);
+    def_binary("mul", gg::mul, "mul", true);
+    def_binary("div", gg::div, "truediv", true);
+    def_binary("matmul", gg::matmul, "matmul", false);
+    def_binary("pow", gg::pow, std::nullopt, true);
+
+#define DEF_REDUCTION(name, op_type) def_tensor_func(name, [](std::shared_ptr<Tensor> t) { \
     return std::shared_ptr<Tensor>(new ReductionOp(t, ReductionOpType::op_type));          \
 });
     DEF_REDUCTION("sum", SUM);
