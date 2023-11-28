@@ -171,22 +171,18 @@ class Tensor : public std::enable_shared_from_this<Tensor> {
         // Leaf Tensors have nothing to do here.
     }
 
-    // Converts the tensor to a human-readable string.
-    virtual std::string to_string() const {
-        std::string result = "<Tensor: dims=";
-        result += vector_to_string(this->dims);
-        if (this->data) {
-            result += ", data=";
-            if (this->on_gpu) {
-                result += vector_to_string(std::get<CudaArray>(*this->data).to_vector());
-            } else {
-                result += vector_to_string(std::get<std::vector<scalar_t>>(*this->data));
-            }
+    // Evaluates this tensor and returns a CPU buffer containing a copy of the evaluated data.
+    std::vector<scalar_t> eval_to_cpu() {
+        size_t size = product(this->dims);
+        const scalar_t* data = this->eval();
+        if (this->on_gpu) {
+            std::vector<scalar_t> result(size);
+            cudaMemcpy(result.data(), data, size * sizeof(scalar_t), cudaMemcpyDefault);
+            assert_no_cuda_error();
+            return result;
+        } else {
+            return std::vector<scalar_t>(data, data + size);
         }
-        result += ", on_gpu=";
-        result += on_gpu ? "true" : "false";
-        result += ">";
-        return result;
     }
 
 

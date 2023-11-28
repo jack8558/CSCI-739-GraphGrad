@@ -42,7 +42,22 @@ static py::object to_list(Tensor& t) {
         }
     }
 
-    return make_sublist(dims, strides, t.eval(), 0);
+    std::vector<scalar_t> data = t.eval_to_cpu();
+    return make_sublist(dims, strides, data.data(), 0);
+}
+
+static std::string to_string(Tensor& t) {
+    std::string result = "<Tensor: dims=";
+    result += vector_to_string(t.dims);
+
+    result += ", data=";
+    result += vector_to_string(t.eval_to_cpu());
+
+    result += ", on_gpu=";
+    result += t.on_gpu ? "true" : "false";
+
+    result += ">";
+    return result;
 }
 
 PYBIND11_MODULE(graphgrad, m) {
@@ -56,10 +71,7 @@ PYBIND11_MODULE(graphgrad, m) {
         .def("backward", &Tensor::backward)
         .def_readwrite("grad", &Tensor::grad)
         .def("to_list", to_list)
-        .def("__repr__", [](Tensor& t) {
-            t.eval();
-            return t.to_string();
-        });
+        .def("__repr__", to_string);
     m.def("rand", &Tensor::rand);
     m.def("zeros", &Tensor::zeros);
     m.def("ones", &Tensor::ones);
