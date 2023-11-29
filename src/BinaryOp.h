@@ -279,19 +279,6 @@ class BinaryOp : public Tensor {
     BinaryOpType op_type;
 };
 
-// Operator overloads:
-
-#define IMPL_OPERATOR_OVERLOAD(op, op_type)                                                                     \
-    inline static std::shared_ptr<Tensor> operator op(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2) { \
-        return std::shared_ptr<Tensor>(new BinaryOp(t1, t2, BinaryOpType::op_type));                            \
-    }
-
-IMPL_OPERATOR_OVERLOAD(+, ADD)
-IMPL_OPERATOR_OVERLOAD(-, SUB)
-IMPL_OPERATOR_OVERLOAD(*, MUL)
-IMPL_OPERATOR_OVERLOAD(/, DIV)
-
-#undef IMPL_OPERATOR_OVERLOAD
 
 // Functions:
 
@@ -346,3 +333,18 @@ inline static std::shared_ptr<Tensor> matmul(std::shared_ptr<Tensor> left, std::
 }
 
 #undef IMPL_OP_FUNC
+
+
+// Operator overloads:
+
+#define IMPL_OPERATOR_OVERLOAD(op, func)                                                                        \
+    inline static std::shared_ptr<Tensor> operator op(std::shared_ptr<Tensor> t1, std::shared_ptr<Tensor> t2) { \
+        return gg::func(t1, t2);                                                                                \
+    }
+
+IMPL_OPERATOR_OVERLOAD(+, add)
+IMPL_OPERATOR_OVERLOAD(-, subtract)
+IMPL_OPERATOR_OVERLOAD(*, mul)
+IMPL_OPERATOR_OVERLOAD(/, div)
+
+#undef IMPL_OPERATOR_OVERLOAD

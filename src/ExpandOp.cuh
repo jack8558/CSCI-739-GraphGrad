@@ -2,6 +2,9 @@
 
 #include <memory>
 
+#include <pybind11/pybind11.h>
+namespace py = pybind11;
+
 #include "Tensor.h"
 #include "cuda_helpers.h"
 
@@ -59,6 +62,10 @@ class ExpandOp : public Tensor {
 
    protected:
     static std::vector<size_t> get_dims(const Tensor& tensor, size_t new_dim0_size) {
+        if (new_dim0_size == 0) {
+            throw py::value_error("cannot expand to size 0");
+        }
+
         // Add a new dimension of size new_dim0_size to the front.
         std::vector<size_t> new_dims = tensor.dims;
         new_dims.insert(new_dims.begin(), new_dim0_size);
