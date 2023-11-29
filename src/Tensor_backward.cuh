@@ -5,6 +5,7 @@ namespace py = pybind11;
 #include <unordered_set>
 
 #include "BinaryOp.h"
+#include "ExpandOp.cuh"
 #include "ReductionOp.cuh"
 #include "ReshapeOp.h"
 #include "Tensor.h"

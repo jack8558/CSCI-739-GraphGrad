@@ -8,6 +8,7 @@ namespace py = pybind11;
 #include <memory>
 
 #include "BinaryOp.h"
+#include "ExpandOp.cuh"
 #include "ReductionOp.cuh"
 #include "ReshapeOp.h"
 #include "Tensor.h"
@@ -118,13 +119,9 @@ PYBIND11_MODULE(graphgrad, m) {
     DEF_UNARY("exp", EXP);
     DEF_UNARY("log", LOG);
 
-    def_tensor_func("transpose", [](std::shared_ptr<Tensor> t, int dim0, int dim1) {
-        return std::shared_ptr<Tensor>(new TransposeOp(t, dim0, dim1));
-    });
+    def_tensor_func("transpose", transpose);
 
-    def_tensor_func("reshape", [](std::shared_ptr<Tensor> t, std::vector<size_t> new_dims) {
-        return std::shared_ptr<Tensor>(new ReshapeOp(t, new_dims));
-    });
+    def_tensor_func("reshape", reshape);
 
     auto def_binary = [&](const char* name, auto op_func, std::optional<const char*> py_op, bool allow_scalars) {
         auto concat = [](auto p1, auto p2, auto p3) {
@@ -165,6 +162,8 @@ PYBIND11_MODULE(graphgrad, m) {
     return std::shared_ptr<Tensor>(new ReductionOp(t, ReductionOpType::op_type));          \
 });
     DEF_REDUCTION("sum", SUM);
+
+    def_tensor_func("expand", expand);
 
     m.add_object("_cleanup", py::capsule([]() {
         Tensor::lruMap.clear();
