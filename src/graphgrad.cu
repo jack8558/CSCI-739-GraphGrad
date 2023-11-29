@@ -93,7 +93,7 @@ PYBIND11_MODULE(graphgrad, m) {
         return new_t;
     });
     m.def("clear_cache", []() {
-        Tensor::lruMap.clear();
+        Tensor::clear_cache();
     });
 
     auto tensor_class = py::class_<Tensor, std::shared_ptr<Tensor>>(m, "tensor");
@@ -174,6 +174,6 @@ PYBIND11_MODULE(graphgrad, m) {
     def_tensor_func("expand", expand);
 
     m.add_object("_cleanup", py::capsule([]() {
-        Tensor::lruMap.clear();
+        Tensor::clear_cache();
     }));
 }

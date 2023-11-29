@@ -23,7 +23,7 @@ public:
         updateOrderOfAccess(key);
     }
 
-   bool exists(const Key& key) {
+    bool exists(const Key& key) {
         return cacheMap.find(key) != cacheMap.end();
     }
 
@@ -42,11 +42,11 @@ public:
         lruList.clear();
     }
 
-private:
     size_t maxCapacity;
     std::unordered_map<Key, Value> cacheMap;
     std::list<Key> lruList;
 
+private:
     void updateOrderOfAccess(const Key& key) {
         lruList.remove(key);
         lruList.push_front(key);

@@ -191,9 +191,6 @@ class Tensor : public std::enable_shared_from_this<Tensor> {
     // May be null if this Tensor has no gradient assigned.
     std::shared_ptr<Tensor> grad = nullptr;
 
-    // Static hashmap for common subextpression. Removes least used element if exceeds capacity.
-    inline static LRUMap<size_t, std::shared_ptr<Tensor>> lruMap{200};
-
     // hashValue of tensor
     size_t hashValue;
 
@@ -231,4 +228,25 @@ class Tensor : public std::enable_shared_from_this<Tensor> {
 
     // Whether the Tensor's data/computation will be on GPU (versus CPU).
     bool on_gpu;
+
+    void clear_grad() {
+        this->grad = nullptr;
+        for (auto child : this->get_children()) {
+            child->clear_grad();
+        }
+    }
+
+    inline static void clear_cache() {
+        // Set all cached tensors' grad fields to null to break any reference cycles.
+        for (auto& [key, tensor] : Tensor::lruMap.cacheMap) {
+            tensor->clear_grad();
+        }
+
+        // Clear the cache.
+        Tensor::lruMap.clear();
+    }
+
+   private:
+    // Static hashmap for common subextpression. Removes least used element if exceeds capacity.
+    inline static LRUMap<size_t, std::shared_ptr<Tensor>> lruMap{200};
 };
