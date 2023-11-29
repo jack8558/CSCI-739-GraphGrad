@@ -99,9 +99,11 @@ Here blue rectangle is shown as leaf tensors and orange circles are representing
 #### Memory managing: 
 Since GraphGrad uses lazy evaluation, it does not evaluate until the eval function is called. Because of this, it accumulates the nodes and constructs the graph until eval is called. Due to this reason, if a user tries to build a super big graph and it does not get evaluated in an intermediate step, it might run into a memory error.
 
-To prevent memory error, it is on user's control to call the function below in appropriate manner.
+To prevent memory error, it is on user's control to call the functions below in appropriate manner.
 
-- gg.eval(tensor1): Forces evaluation of the given tensor and returns a new leaf tensor containing the evaluated data. 
+- `gg.eval(tensor)`: Forces evaluation of the given tensor and returns a new leaf tensor containing the evaluated data.
+
+- `gg.clear_cache()`: Resets all cached tensors' `grad`s to `None` and clears the evaluation cache.
 
 ``` py
 param = gg.tensor(...)
@@ -111,12 +113,14 @@ for _ in _:
 
     param = gg.eval(param - lr*param.grad)
 
+    gg.clear_cache()
 ```
 
-Using `gg.eval` will let user do training iterations without building a huge graph and running out of memory.
+Using `gg.eval` and `gg.clear_cache` in this way will let user do many training iterations without building a huge graph and running out of memory.
 
 
 
+#### Tensor operations:
 
 - *neg(t)*: Returns a new tensor with the negative of the elements of input tensor.
 ``` py
@@ -452,14 +456,3 @@ Test 5 finished.
         Torch time: 4.835883064079098
 
 When using GPU for both GraphGrad and torch, GraphGrad was ~4 times slower than pytorch. This result is quite impressive comapred to highly used library like pytroch. For special case in test5, GraphGrad still performs better than pytorch.
-
-
-
-
-
-
-
-
-
-
-

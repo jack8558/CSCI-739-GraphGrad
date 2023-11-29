@@ -1,7 +1,7 @@
+from tqdm import tqdm
 import torch
 from sklearn import datasets
-import torchvision.transforms as transforms
-from torch.utils.data import Dataset, DataLoader, TensorDataset
+from torch.utils.data import DataLoader, TensorDataset
 import os
 import sys
 import numpy as np
@@ -40,9 +40,10 @@ class MLP:
             self.parameters.extend([w, b])
 
     def forward(self, x: gg.tensor) -> gg.tensor:
+        [batch_size, _] = x.dims()
         for i, (w, b) in enumerate(self.layers):
             w = w.value
-            b = b.value
+            b = b.value.expand(batch_size)
 
             x = (x @ w) + b
             if i != len(self.layers) - 1:
@@ -51,10 +52,9 @@ class MLP:
 
 def main():
     gg.use_gpu(True)
-    gg.set_cuda_device(9)
 
     # Initialize the model.
-    model = MLP(8, [], 1)
+    model = MLP(8, [256, 256], 1)
 
     # Create the dataset.
     X, Y = datasets.fetch_california_housing(return_X_y=True)
@@ -67,9 +67,9 @@ def main():
     )
 
     learning_rate = 0.05
-    epochs = 30
+    epochs = 100
 
-    for _ in range(epochs):
+    for _ in tqdm(range(epochs), unit='epoch'):
         for features, targets in train_dataloader:
             features = gg.tensor(((features - X_mean) / X_std).numpy())
             targets = gg.tensor(targets.numpy())
@@ -78,7 +78,7 @@ def main():
             # Get the model predictions.
             predictions = model.forward(features).reshape([batch_size])
 
-            # Get the loss.
+            # Get the MSE loss.
             loss = (predictions - targets).pow(2).sum() / batch_size
             print('Loss:', loss.to_list())
 

@@ -3,3 +3,4 @@ torch
 numpy
 pybind11
 scikit-learn
+tqdm
