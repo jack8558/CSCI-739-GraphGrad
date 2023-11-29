@@ -17,6 +17,8 @@ namespace py = pybind11;
 #include "python_data_to_tensor.h"
 #include "Tensor_backward.cuh"
 
+std::mt19937 global_rng(std::random_device{}());
+
 bool use_gpu = false;
 
 static py::object make_sublist(const std::vector<size_t>& dims, const std::vector<size_t>& strides, const scalar_t* data, size_t dim) {
@@ -68,10 +70,15 @@ PYBIND11_MODULE(graphgrad, m) {
         assert_no_cuda_error();
     });
     m.def("eval", [](std::shared_ptr<Tensor> t) {
-        // Create a new leaf Tensor and fill its data with the data from t->eval().
+        // Create a new leaf Tensor.
         auto new_t = std::make_shared<Tensor>(t->dims);
         new_t->on_gpu = t->on_gpu;
 
+        // Assign the tensor a random hashValue.
+        std::uniform_int_distribution<size_t> hash_dis(0, std::numeric_limits<size_t>::max());
+        new_t->hashValue = hash_dis(global_rng);
+
+        // The tensor's data with the data from t->eval().
         const scalar_t* data = t->eval();
         size_t data_len = product(t->dims);
         if (new_t->on_gpu) {

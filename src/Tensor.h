@@ -4,7 +4,6 @@
 #include <cstdlib>
 #include <memory>
 #include <optional>
-#include <random>
 #include <stdexcept>
 #include <string>
 #include <variant>
@@ -63,11 +62,9 @@ class Tensor : public std::enable_shared_from_this<Tensor> {
         std::vector<scalar_t> data(product(dims));
 
         // Fill the data with random values.
-        std::random_device rd;
-        std::mt19937 gen(rd());
         std::uniform_real_distribution<> dis(0, 1);
         for (scalar_t& value : data) {
-            value = dis(gen);
+            value = dis(global_rng);
         }
 
         return std::make_shared<Tensor>(dims, data);
@@ -110,7 +107,7 @@ class Tensor : public std::enable_shared_from_this<Tensor> {
     // Used to combine hashvalue and object
     template <typename T>
     static void hash_combine(size_t& seed, const T& val) {
-        seed ^= std::hash<T>{}(val) + 0x9e3779b9 + (seed << 6) + (seed >> 2);
+        hash_combine(seed, std::hash<T>{}(val));
     }
 
     // Used to combine two hashvalue
