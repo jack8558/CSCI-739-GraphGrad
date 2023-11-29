@@ -376,6 +376,9 @@ A simple binary logistic logression classifier has been implemented in `tests/lo
     sklearn accuracy: 96.32%
     GrphGrad model accuracy: 93.68%
 
+## DNN regression
+`tests/dnn_regression_example.py` contains a demo of building an MLP neural network with GraphGrad and training it on the California housing regression dataset. The loss goes down over the course of training and reaches an MSE of ~0.3.
+
 ## Benchmark with Pytorch
 Pytorch has been chosen to be a benchmark and below is the comparision with GraphGrad.
 
