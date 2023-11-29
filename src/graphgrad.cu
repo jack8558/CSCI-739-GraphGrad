@@ -162,6 +162,7 @@ PYBIND11_MODULE(graphgrad, m) {
     return std::shared_ptr<Tensor>(new ReductionOp(t, ReductionOpType::op_type));          \
 });
     DEF_REDUCTION("sum", SUM);
+    DEF_REDUCTION("sum_dim0", SUM_DIM0);
 
     def_tensor_func("expand", expand);
 

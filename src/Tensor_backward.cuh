@@ -198,8 +198,16 @@ void ReductionOp::backward_step() {
             // this->grad is a scalar; add that scalar to every element of this->child->grad.
             this->child->add_grad(this->grad);
             break;
+        case ReductionOpType::SUM_DIM0:
+            assert(this->child->dims.size() > 0);
+            this->child->add_grad(expand(this->grad, this->child->dims[0]));
+            break;
 
         default:
             throw std::domain_error("bad op_type");
     }
+}
+
+void ExpandOp::backward_step() {
+    this->child->add_grad(sum_dim0(this->grad));
 }
