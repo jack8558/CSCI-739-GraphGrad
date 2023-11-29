@@ -28,6 +28,8 @@ class TestReductionOp:
         "gg_tensor_5_10",
         "gg_tensor_10_10",
         "gg_tensor_50_100",
+        "gg_tensor_50_50_50",
+        "gg_tensor_50_100_200",
     ]
 
     @pytest.mark.parametrize("gg_func, torch_func", UNARY_OPS)
@@ -38,4 +40,19 @@ class TestReductionOp:
         torch_tensor = torch.tensor(gg_tensor.to_list())
         torch_result = torch_func(torch_tensor)
         assert gg_result.dims() == []
-        assert np.isclose(gg.sum(gg_tensor).to_list(), torch_result, rtol=1e-4).all()
+        assert np.isclose(gg_result.to_list(), torch_result, rtol=1e-4).all()
+
+
+    @pytest.mark.parametrize("gg_tensor", GG_TENSORS)
+    def test_reduction_dim0_op(self, gg_tensor, request):
+        gg_tensor = request.getfixturevalue(gg_tensor)
+        gg_result = gg.sum_dim0(gg_tensor)
+        torch_tensor = torch.tensor(gg_tensor.to_list())
+        torch_result = torch.sum(torch_tensor, dim=0)
+        gg_dim = gg_tensor.dims()
+        print(gg_result)
+        print(torch_result)
+        assert gg_result.dims() == gg_dim[1:]
+        assert np.isclose(gg_result.to_list(), torch_result, rtol=1e-4).all()
+
+

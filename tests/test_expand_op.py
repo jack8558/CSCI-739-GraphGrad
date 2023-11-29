@@ -16,8 +16,8 @@ import numpy as np
 
 class TestExpandOp:
     GG_TENSORS = [
-        ("gg_tensor_5_10", [5,10], 0),
         ("gg_tensor_5_10", [5,10], 1),
+        ("gg_tensor_5_10", [5,10], 5),
         ("gg_tensor_10_10", [10,10], 10),
         ("gg_tensor_10_10", [10,10], 100),
         ("gg_tensor_50_100", [50, 100], 10),
@@ -47,7 +47,7 @@ class TestExpandOp:
         torch_tensor.requires_grad = True
         torch_result = torch_tensor.expand(tuple([size] + dims))
 
-        gg_result = gg_tensor.expand(dims)
+        gg_result = gg_tensor.expand(size)
 
         gg_rand_grad_factor = gg.rand(gg_result.dims())
         torch_rand_grad_factor = torch.tensor(gg_rand_grad_factor.to_list(), dtype=torch.float64)
