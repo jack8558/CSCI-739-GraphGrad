@@ -17,5 +17,7 @@ Below are tasks we have completed for this Projects
     - README.md
 - Benchmarking with baselines 5pt
     - Benchmark with pytorch
+- Testing Infrastructure
+    - Multiple unit test implmented in pytest
 
 More details and examples on README

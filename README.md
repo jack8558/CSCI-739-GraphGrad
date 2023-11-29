@@ -312,6 +312,18 @@ or
 <Tensor: dims=[1], data=[10.000000]>
 ```
 
+- *sum_dim0*: Returns new tensor which sums the tensors with the first dimension. (Note: this function would be useful summing over any combination of axis. Simply use comination of *sum_dim0*, *transpose*, and *reshape*.)
+```
+>>> gg.tensor([[1, 2, 3], [10, 20, 30]]).sum_dim0().to_list()
+[11.0, 22.0, 33.0]
+```
+
+- *expand(num)*: Given a tensor, returns a new tensor that expands input tensor with given number. The new first dimension will be *num*.
+```
+>>> gg.tensor([1, 2]).expand(3).to_list()
+[[1.0, 2.0], [1.0, 2.0], [1.0, 2.0]]
+```
+
 ### Computing gradients
 - backward: Computes the gradient of current tensor wrt graph leaves. The graph is differentiated using the chain rule. You can only apply bakcward to scalar tensor(sum operator comes handy this case). Calling `.grad` for tensors will show relative gradient.
 ``` py
