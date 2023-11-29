@@ -62,13 +62,13 @@ Users can construct the leaf tensor by using following constructors.
 ```
 - Construct with zero values: pass the dimension as argument and returns tensor with zero values
 ``` py
->>> tensor = gg.rand([2,3])
+>>> tensor = gg.zeros([2,3])
 >>> tensor
 <Tensor: dims=[2, 3], data=[0.000000, 0.000000, 0.000000, 0.000000, 0.000000, 0.000000]>
 ```
 - Construct with ones values: pass the dimension as argument and returns tensor with ones values
 ``` py
->>> tensor = gg.rand([2,3])
+>>> tensor = gg.ones([2,3])
 >>> tensor
 <Tensor: dims=[2, 3], data=[1.000000, 1.000000, 1.000000, 1.000000, 1.000000, 1.000000]>
 ```
@@ -90,13 +90,13 @@ You can define scalar tensor like below.
 
 
 ### Supported tensor operations
-GraphGrad uses tensor operations to combine tensors and build graphs. For example, let's say we have simple tensor expression '(A + B) * C' where A,B, and C are leaf tensors. You can imagine GraphGrad will build a graph with following nodes.
+GraphGrad uses tensor operations to combine tensors and build graphs. For example, let's say we have simple tensor expression `(A + B) * C` where `A`, `B`, and `C` are leaf tensors. GraphGrad will build a graph with the following nodes:
 
 ![Alt text](image-1.png)
 
 Here blue rectangle is shown as leaf tensors and orange circles are representing operators that combines tensors.
 
-#### Memory managing: 
+#### Memory management: 
 Since GraphGrad uses lazy evaluation, it does not evaluate until the eval function is called. Because of this, it accumulates the nodes and constructs the graph until eval is called. Due to this reason, if a user tries to build a super big graph and it does not get evaluated in an intermediate step, it might run into a memory error.
 
 To prevent memory error, it is on user's control to call the functions below in appropriate manner.
@@ -317,13 +317,13 @@ or
 ```
 
 - *sum_dim0*: Returns new tensor which sums the tensors with the first dimension. (Note: this function would be useful summing over any combination of axis. Simply use comination of *sum_dim0*, *transpose*, and *reshape*.)
-```
+```py
 >>> gg.tensor([[1, 2, 3], [10, 20, 30]]).sum_dim0().to_list()
 [11.0, 22.0, 33.0]
 ```
 
 - *expand(num)*: Given a tensor, returns a new tensor that expands input tensor with given number. The new first dimension will be *num*.
-```
+```py
 >>> gg.tensor([1, 2]).expand(3).to_list()
 [[1.0, 2.0], [1.0, 2.0], [1.0, 2.0]]
 ```
