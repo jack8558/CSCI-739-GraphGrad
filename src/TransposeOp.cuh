@@ -31,7 +31,8 @@ class TransposeOp : public Tensor {
 
     size_t tensor_hash(){
         size_t hashValue = 0;
-        Tensor::hash_combine(hashValue, Tensor::vector_hash(this->dims));
+        Tensor::hash_combine(hashValue, this->dim0);
+        Tensor::hash_combine(hashValue, this->dim1);
         Tensor::hash_combine(hashValue, std::hash<std::string>{}("transpose"));
         Tensor::hash_combine(hashValue, this->child->hashValue);
         return hashValue;
